@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.jboss.jdeparser</groupId>
+    <artifactId>jdeparser3</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-parent</artifactId>
+        <version>51</version>
+    </parent>
+
+    <name>JDeparser 3</name>
+
+    <url>https://github.com/jdeparser/jdeparser3</url>
+
+    <description>A Java source code generation library using the borrow pattern</description>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/jdeparser/jdeparser3/issues</url>
+    </issueManagement>
+
+    <scm>
+        <connection>scm:git:git@github.com:jdeparser/jdeparser3.git</connection>
+        <developerConnection>scm:git:git@github.com:jdeparser/jdeparser3.git</developerConnection>
+        <url>https://github.com/jdeparser/jdeparser3</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>jdeparser-team</id>
+            <name>JDeparser Team</name>
+            <organization>JBoss</organization>
+            <organizationUrl>https://jboss.org</organizationUrl>
+        </developer>
+    </developers>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <jdk.min.version>25</jdk.min.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>6.0.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

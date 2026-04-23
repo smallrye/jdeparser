@@ -212,7 +212,7 @@ class DocCommentTest extends AbstractGeneratingTestCase {
                 cc.public_();
                 cc.docComment(dc -> {
                     dc.text("A documented class.");
-                    dc.see("OtherClass#method()");
+                    dc.see(JTypes.typeNamed("OtherClass").docRef("method()"));
                 });
             });
         });

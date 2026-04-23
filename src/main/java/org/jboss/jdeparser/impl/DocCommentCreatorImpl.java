@@ -107,14 +107,6 @@ public final class DocCommentCreatorImpl extends DocInlineCreatorImpl implements
 
     /** {@inheritDoc} */
     @Override
-    public void see(final String reference) {
-        checkActive();
-        Assert.checkNotNullParam("reference", reference);
-        blockTags.add(w -> w.writeUnescaped("@see " + reference));
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public void see(final JType type) {
         checkActive();
         Assert.checkNotNullParam("type", type);

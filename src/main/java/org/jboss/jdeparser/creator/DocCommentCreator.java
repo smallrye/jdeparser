@@ -93,13 +93,6 @@ public sealed interface DocCommentCreator extends DocInlineCreator permits DocCo
     void throws_(JType exceptionType, Consumer<DocInlineCreator> builder);
 
     /**
-     * Adds a {@code @see} tag with a text reference.
-     *
-     * @param reference the see reference (e.g., {@code "OtherClass#method()"})
-     */
-    void see(String reference);
-
-    /**
      * Adds a {@code @see} tag referencing a type.
      * <p>
      * The type name is resolved according to import rules at write time.

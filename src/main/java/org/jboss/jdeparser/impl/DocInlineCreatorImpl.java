@@ -299,6 +299,9 @@ public non-sealed class DocInlineCreatorImpl extends AbstractCreator implements 
     /** Package, type, and field. */
     static final Set<DocContext> CONTEXT_SERIAL = EnumSet.of(DocContext.PACKAGE, DocContext.TYPE, DocContext.FIELD);
 
+    /** Package and type only (for {@code @serial include} and {@code @serial exclude}). */
+    static final Set<DocContext> CONTEXT_SERIAL_INCLUDE_EXCLUDE = EnumSet.of(DocContext.PACKAGE, DocContext.TYPE);
+
     /** Field only. */
     static final Set<DocContext> CONTEXT_FIELD = EnumSet.of(DocContext.FIELD);
 

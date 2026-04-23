@@ -141,6 +141,42 @@ class DocCommentTest extends AbstractGeneratingTestCase {
     }
 
     /**
+     * Verifies that the inline {@code {@return ...}} tag supports rich
+     * inline content such as {@code {@link}} and {@code {@code}} tags.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void returnInlineWithInlineContent() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "ReturnInlineRich", sf -> {
+            sf.class_("ReturnInlineRich", cc -> {
+                cc.public_();
+                cc.method("getName", mc -> {
+                    mc.public_();
+                    mc.returning(JType.STRING);
+                    mc.docComment(dc -> {
+                        dc.returnInline(ic -> {
+                            ic.text("the name, or ");
+                            ic.code("null");
+                            ic.text(" if not set (see ");
+                            ic.link(JType.STRING);
+                            ic.text(")");
+                        });
+                    });
+                    mc.body(b -> {
+                        b.return_(JExpr.NULL);
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ReturnInlineRich");
+        assertTrue(source.contains("{@return the name, or {@code null} if not set (see {@link String})}"),
+            "should contain inline @return tag with nested inline content");
+    }
+
+    /**
      * Verifies that the {@code @return} block tag is generated correctly
      * as a traditional block tag rather than an inline tag.
      *
@@ -1045,6 +1081,131 @@ class DocCommentTest extends AbstractGeneratingTestCase {
         sources.writeSources();
         final String source = getSource("com.example", "SerialDoc");
         assertTrue(source.contains("@serial include"), "should contain @serial tag");
+    }
+
+    /**
+     * Verifies that the {@code @serial} tag supports rich inline content
+     * for describing the serialized form of a field.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void serialTagWithInlineContent() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "SerialRich", sf -> {
+            sf.class_("SerialRich", cc -> {
+                cc.public_();
+                cc.field("name", fc -> {
+                    fc.private_();
+                    fc.type(JType.STRING);
+                    fc.docComment(dc -> {
+                        dc.text("The person's name.");
+                        dc.serial(ic -> {
+                            ic.text("A non-null ");
+                            ic.link(JType.STRING);
+                            ic.text(" value.");
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "SerialRich");
+        assertTrue(source.contains("@serial A non-null {@link String} value."),
+            "should contain @serial tag with inline content");
+    }
+
+    /**
+     * Verifies that the {@code @serial include} tag is generated correctly
+     * on a type declaration.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void serialIncludeTag() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "SerialInc", sf -> {
+            sf.class_("SerialInc", cc -> {
+                cc.public_();
+                cc.docComment(dc -> {
+                    dc.text("A serializable class.");
+                    dc.serialInclude();
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "SerialInc");
+        assertTrue(source.contains("@serial include"),
+            "should contain @serial include tag");
+    }
+
+    /**
+     * Verifies that the {@code @serial exclude} tag is generated correctly
+     * on a type declaration.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void serialExcludeTag() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "SerialExc", sf -> {
+            sf.class_("SerialExc", cc -> {
+                cc.public_();
+                cc.docComment(dc -> {
+                    dc.text("A non-serializable class.");
+                    dc.serialExclude();
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "SerialExc");
+        assertTrue(source.contains("@serial exclude"),
+            "should contain @serial exclude tag");
+    }
+
+    /**
+     * Verifies that {@code serialInclude()} is rejected on a field
+     * (only valid on package and type).
+     */
+    @Test
+    void serialIncludeRejectedOnField() {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        assertThrows(IllegalStateException.class, () -> {
+            sources.createSourceFile("com.example", "SerialIncBad", sf -> {
+                sf.class_("SerialIncBad", cc -> {
+                    cc.public_();
+                    cc.field("x", fc -> {
+                        fc.type(JType.INT);
+                        fc.docComment(dc -> {
+                            dc.serialInclude();
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * Verifies that {@code serialExclude()} is rejected on a method
+     * (only valid on package and type).
+     */
+    @Test
+    void serialExcludeRejectedOnMethod() {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        assertThrows(IllegalStateException.class, () -> {
+            sources.createSourceFile("com.example", "SerialExcBad", sf -> {
+                sf.class_("SerialExcBad", cc -> {
+                    cc.public_();
+                    cc.method("foo", mc -> {
+                        mc.public_();
+                        mc.docComment(dc -> {
+                            dc.serialExclude();
+                        });
+                        mc.body(b -> {});
+                    });
+                });
+            });
+        });
     }
 
     /**

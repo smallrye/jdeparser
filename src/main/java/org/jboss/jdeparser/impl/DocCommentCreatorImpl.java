@@ -63,12 +63,19 @@ public final class DocCommentCreatorImpl extends DocInlineCreatorImpl implements
 
     /** {@inheritDoc} */
     @Override
-    public void returnInline(final String description) {
+    public void returnInline(final Consumer<DocInlineCreator> builder) {
         checkActive();
-        Assert.checkNotNullParam("description", description);
+        Assert.checkNotNullParam("builder", builder);
         requireContext("return", CONTEXT_METHOD);
         version().require(LanguageFeature.DOC_RETURN_INLINE);
-        parts.add(w -> w.writeUnescaped("{@return " + description + "}"));
+        final DocInlineCreatorImpl ic = new DocInlineCreatorImpl(version(), sourceFile(), context());
+        nest(() -> builder.accept(ic));
+        ic.finish();
+        parts.add(w -> {
+            w.writeUnescaped("{@return ");
+            ic.write(w);
+            w.writeUnescaped("}");
+        });
         hasInlineReturn = true;
     }
 
@@ -180,11 +187,33 @@ public final class DocCommentCreatorImpl extends DocInlineCreatorImpl implements
 
     /** {@inheritDoc} */
     @Override
-    public void serial(final String text) {
+    public void serial(final Consumer<DocInlineCreator> builder) {
         checkActive();
-        Assert.checkNotNullParam("text", text);
+        Assert.checkNotNullParam("builder", builder);
         requireContext("serial", CONTEXT_SERIAL);
-        blockTags.add(w -> w.writeUnescaped("@serial " + text));
+        final DocInlineCreatorImpl ic = new DocInlineCreatorImpl(version(), sourceFile(), context());
+        nest(() -> builder.accept(ic));
+        ic.finish();
+        blockTags.add(w -> {
+            w.writeUnescaped("@serial ");
+            ic.write(w);
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void serialInclude() {
+        checkActive();
+        requireContext("serial include", CONTEXT_SERIAL_INCLUDE_EXCLUDE);
+        blockTags.add(w -> w.writeUnescaped("@serial include"));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void serialExclude() {
+        checkActive();
+        requireContext("serial exclude", CONTEXT_SERIAL_INCLUDE_EXCLUDE);
+        blockTags.add(w -> w.writeUnescaped("@serial exclude"));
     }
 
     /** {@inheritDoc} */

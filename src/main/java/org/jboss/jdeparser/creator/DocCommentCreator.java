@@ -33,16 +33,35 @@ public sealed interface DocCommentCreator extends DocInlineCreator permits DocCo
     void author(String nameText);
 
     /**
-     * Sets the return documentation using the inline {@code {@return ...}} tag,
-     * which serves as both the first summary sentence and the {@code @return} block tag.
+     * Sets the return documentation using the inline {@code {@return ...}} tag
+     * with plain text content, which serves as both the first summary sentence
+     * and the {@code @return} block tag.
+     * <p>
+     * Only valid in method documentation comments.
+     * Requires source version {@linkplain org.jboss.jdeparser.SourceVersion#JAVA_16 16}
+     * or later.
+     * This is a convenience overload that delegates to
+     * {@link #returnInline(Consumer)} by wrapping the description in a
+     * {@link DocInlineCreator#text(String) text} call.
+     *
+     * @param description the return description
+     */
+    default void returnInline(final String description) {
+        returnInline(c -> c.text(description));
+    }
+
+    /**
+     * Sets the return documentation using the inline {@code {@return ...}} tag
+     * with rich inline content, which serves as both the first summary sentence
+     * and the {@code @return} block tag.
      * <p>
      * Only valid in method documentation comments.
      * Requires source version {@linkplain org.jboss.jdeparser.SourceVersion#JAVA_16 16}
      * or later.
      *
-     * @param description the return description
+     * @param builder the builder for the inline tag body content
      */
-    void returnInline(String description);
+    void returnInline(Consumer<DocInlineCreator> builder);
 
     /**
      * Adds a {@code @return} block tag with plain text content.
@@ -180,15 +199,51 @@ public sealed interface DocCommentCreator extends DocInlineCreator permits DocCo
     void provides(JType serviceType, Consumer<DocInlineCreator> builder);
 
     /**
-     * Adds a {@code @serial} tag.
+     * Adds a {@code @serial} tag with plain text content describing the
+     * serialized form of a field.
      * <p>
      * Only valid in package, type, and field documentation comments.
-     * The text may be a field description, or {@code "include"} or
-     * {@code "exclude"} to control serialized form inclusion.
+     * This is a convenience overload that delegates to
+     * {@link #serial(Consumer)} by wrapping the text in a
+     * {@link DocInlineCreator#text(String) text} call.
+     * <p>
+     * For the special forms {@code @serial include} and {@code @serial exclude},
+     * use {@link #serialInclude()} and {@link #serialExclude()} instead.
      *
      * @param text the serial tag text
      */
-    void serial(String text);
+    default void serial(final String text) {
+        serial(c -> c.text(text));
+    }
+
+    /**
+     * Adds a {@code @serial} tag with rich inline content describing the
+     * serialized form of a field.
+     * <p>
+     * Only valid in package, type, and field documentation comments.
+     * <p>
+     * For the special forms {@code @serial include} and {@code @serial exclude},
+     * use {@link #serialInclude()} and {@link #serialExclude()} instead.
+     *
+     * @param builder the builder for the block tag body content
+     */
+    void serial(Consumer<DocInlineCreator> builder);
+
+    /**
+     * Adds a {@code @serial include} tag to include a class in the
+     * serialized form documentation.
+     * <p>
+     * Only valid in package and type documentation comments.
+     */
+    void serialInclude();
+
+    /**
+     * Adds a {@code @serial exclude} tag to exclude a class from the
+     * serialized form documentation.
+     * <p>
+     * Only valid in package and type documentation comments.
+     */
+    void serialExclude();
 
     /**
      * Adds a {@code @serialData} tag with plain text content.

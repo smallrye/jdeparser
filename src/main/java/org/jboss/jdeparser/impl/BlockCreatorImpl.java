@@ -17,6 +17,7 @@ import org.jboss.jdeparser.SourceVersion;
 import org.jboss.jdeparser.creator.BlockCreator;
 import org.jboss.jdeparser.creator.ClassCreator;
 import org.jboss.jdeparser.creator.ForCreator;
+import org.jboss.jdeparser.creator.LocalVarCreator;
 import org.jboss.jdeparser.creator.InterfaceCreator;
 import org.jboss.jdeparser.creator.SwitchCreator;
 import org.jboss.jdeparser.creator.TryCreator;
@@ -79,45 +80,39 @@ public final class BlockCreatorImpl extends AbstractCreator implements BlockCrea
 
     /** {@inheritDoc} */
     @Override
-    public JVar var(final JType type, final String name, final JExpr init) {
+    public JVar var(final JType type, final String name, final JExpr init,
+                    final Consumer<LocalVarCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
         Assert.checkNotNullParam("init", init);
+        Assert.checkNotNullParam("builder", builder);
         registerUsedType(type);
-        final NameJExpr var = new NameJExpr(name);
-        content.add(w -> {
-            AbstractJExpr.writeType(w, type);
-            w.sp();
-            w.writeName(name);
-            w.write(Tokens.$BINOP.ASSIGN);
-            AbstractJExpr.writeExpr(w, init);
-            w.write(Tokens.$PUNCT.SEMI);
-            w.nl();
-        });
-        return var;
+        final LocalVarCreatorImpl lvc = new LocalVarCreatorImpl(version(), name, type, init);
+        lvc.sourceFile(sourceFile());
+        nest(() -> builder.accept(lvc));
+        lvc.finish();
+        content.add(lvc);
+        return new NameJExpr(name);
     }
 
     /** {@inheritDoc} */
     @Override
-    public JVar var(final String name, final JExpr init) {
+    public JVar var(final String name, final JExpr init,
+                    final Consumer<LocalVarCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
         Assert.checkNotNullParam("init", init);
+        Assert.checkNotNullParam("builder", builder);
         version().require(LanguageFeature.VAR_LOCAL_VARIABLE);
-        final NameJExpr var = new NameJExpr(name);
-        content.add(w -> {
-            w.write(Tokens.$KW.VAR);
-            w.sp();
-            w.writeName(name);
-            w.write(Tokens.$BINOP.ASSIGN);
-            AbstractJExpr.writeExpr(w, init);
-            w.write(Tokens.$PUNCT.SEMI);
-            w.nl();
-        });
-        return var;
+        final LocalVarCreatorImpl lvc = new LocalVarCreatorImpl(version(), name, null, init);
+        lvc.sourceFile(sourceFile());
+        nest(() -> builder.accept(lvc));
+        lvc.finish();
+        content.add(lvc);
+        return new NameJExpr(name);
     }
 
     // ── Control flow ───────────────────────────────────────────────────

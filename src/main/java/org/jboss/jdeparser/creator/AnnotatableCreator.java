@@ -9,7 +9,7 @@ import org.jboss.jdeparser.JType;
  * <p>
  * Provides methods to add annotations to the declaration being built.
  */
-public sealed interface AnnotatableCreator permits EnumConstantCreator, ModifiableCreator, RecordComponentCreator {
+public sealed interface AnnotatableCreator permits EnumConstantCreator, LocalVarCreator, ModifiableCreator, RecordComponentCreator {
 
     /**
      * Adds an annotation with member values configured via the given callback.

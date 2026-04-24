@@ -42,7 +42,9 @@ public sealed interface BlockCreator permits BlockCreatorImpl {
      * @param init the initializer expression
      * @return the variable, for use in subsequent expressions
      */
-    JVar var(JType type, String name, JExpr init);
+    default JVar var(JType type, String name, JExpr init) {
+        return var(type, name, init, lvc -> {});
+    }
 
     /**
      * Declares a local variable with inferred type ({@code var}, Java 10+).
@@ -51,7 +53,35 @@ public sealed interface BlockCreator permits BlockCreatorImpl {
      * @param init the initializer expression
      * @return the variable, for use in subsequent expressions
      */
-    JVar var(String name, JExpr init);
+    default JVar var(String name, JExpr init) {
+        return var(name, init, lvc -> {});
+    }
+
+    /**
+     * Declares a local variable with an explicit type, configured via callback.
+     * <p>
+     * The callback can add annotations and the {@code final} modifier.
+     *
+     * @param type    the variable type
+     * @param name    the variable name
+     * @param init    the initializer expression
+     * @param builder the callback to configure the variable declaration
+     * @return the variable, for use in subsequent expressions
+     */
+    JVar var(JType type, String name, JExpr init, Consumer<LocalVarCreator> builder);
+
+    /**
+     * Declares a local variable with inferred type ({@code var}, Java 10+),
+     * configured via callback.
+     * <p>
+     * The callback can add annotations and the {@code final} modifier.
+     *
+     * @param name    the variable name
+     * @param init    the initializer expression
+     * @param builder the callback to configure the variable declaration
+     * @return the variable, for use in subsequent expressions
+     */
+    JVar var(String name, JExpr init, Consumer<LocalVarCreator> builder);
 
     // ---- Control flow ----
 

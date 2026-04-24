@@ -480,6 +480,203 @@ class ControlFlowTest extends AbstractGeneratingTestCase {
     }
 
     /**
+     * Verifies that a local variable declaration with an annotation generates
+     * the annotation on the line before the declaration.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void localVarAnnotated() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        final JType suppressWarningsType = JType.named("java.lang.SuppressWarnings");
+        sources.createSourceFile("com.example", "LocalVarAnnotated", sf -> {
+            sf.class_("LocalVarAnnotated", cc -> {
+                cc.method("init", mc -> {
+                    mc.body(b -> {
+                        b.var(JType.INT, "x", JExpr.ZERO, lv -> {
+                            lv.annotate(suppressWarningsType, a -> {
+                                a.value(JExpr.str("unchecked"));
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "LocalVarAnnotated");
+        assertTrue(source.contains("@SuppressWarnings(\"unchecked\")"),
+            "should contain annotation");
+        assertTrue(source.contains("int x = 0;"),
+            "should contain typed local variable declaration");
+    }
+
+    /**
+     * Verifies that a local variable declaration with a marker annotation
+     * generates the annotation on the line before the declaration.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void localVarMarkerAnnotation() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        final JType deprecatedType = JType.named("java.lang.Deprecated");
+        sources.createSourceFile("com.example", "LocalVarMarker", sf -> {
+            sf.class_("LocalVarMarker", cc -> {
+                cc.method("init", mc -> {
+                    mc.body(b -> {
+                        b.var(JType.INT, "x", JExpr.ZERO, lv -> {
+                            lv.annotate(deprecatedType);
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "LocalVarMarker");
+        assertTrue(source.contains("@Deprecated"),
+            "should contain marker annotation");
+        assertTrue(source.contains("int x = 0;"),
+            "should contain typed local variable declaration");
+    }
+
+    /**
+     * Verifies that a local variable declaration with the {@code final}
+     * modifier generates the correct syntax.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void localVarFinal() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "LocalVarFinal", sf -> {
+            sf.class_("LocalVarFinal", cc -> {
+                cc.method("init", mc -> {
+                    mc.body(b -> {
+                        b.var(JType.INT, "x", JExpr.ZERO, lv -> {
+                            lv.final_();
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "LocalVarFinal");
+        assertTrue(source.contains("final int x = 0;"),
+            "should contain final typed local variable declaration");
+    }
+
+    /**
+     * Verifies that a local variable declaration with both an annotation
+     * and the {@code final} modifier generates both correctly.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void localVarAnnotatedFinal() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        final JType suppressWarningsType = JType.named("java.lang.SuppressWarnings");
+        sources.createSourceFile("com.example", "LocalVarAnnotatedFinal", sf -> {
+            sf.class_("LocalVarAnnotatedFinal", cc -> {
+                cc.method("init", mc -> {
+                    mc.body(b -> {
+                        b.var(JType.INT, "x", JExpr.ZERO, lv -> {
+                            lv.annotate(suppressWarningsType, a -> {
+                                a.value(JExpr.str("unchecked"));
+                            });
+                            lv.final_();
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "LocalVarAnnotatedFinal");
+        assertTrue(source.contains("@SuppressWarnings(\"unchecked\")"),
+            "should contain annotation");
+        assertTrue(source.contains("final int x = 0;"),
+            "should contain final typed local variable declaration");
+    }
+
+    /**
+     * Verifies that an inferred-type local variable declaration with an
+     * annotation generates the annotation before the {@code var} keyword.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void localVarInferredAnnotated() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        final JType deprecatedType = JType.named("java.lang.Deprecated");
+        sources.createSourceFile("com.example", "LocalVarInferredAnnotated", sf -> {
+            sf.class_("LocalVarInferredAnnotated", cc -> {
+                cc.method("init", mc -> {
+                    mc.body(b -> {
+                        b.var("x", JExpr.decimal(42), lv -> {
+                            lv.annotate(deprecatedType);
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "LocalVarInferredAnnotated");
+        assertTrue(source.contains("@Deprecated"),
+            "should contain annotation");
+        assertTrue(source.contains("var x = 42;"),
+            "should contain var-inferred local variable declaration");
+    }
+
+    /**
+     * Verifies that an inferred-type local variable declaration with
+     * the {@code final} modifier generates the correct syntax.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void localVarInferredFinal() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "LocalVarInferredFinal", sf -> {
+            sf.class_("LocalVarInferredFinal", cc -> {
+                cc.method("init", mc -> {
+                    mc.body(b -> {
+                        b.var("x", JExpr.decimal(42), lv -> {
+                            lv.final_();
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "LocalVarInferredFinal");
+        assertTrue(source.contains("final var x = 42;"),
+            "should contain final var-inferred local variable declaration");
+    }
+
+    /**
+     * Verifies that the builder overload with no modifications produces
+     * identical output to the non-builder overload.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void localVarBuilderNoOp() throws IOException {
+        final JSources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "LocalVarBuilderNoOp", sf -> {
+            sf.class_("LocalVarBuilderNoOp", cc -> {
+                cc.method("init", mc -> {
+                    mc.body(b -> {
+                        b.var(JType.INT, "x", JExpr.ZERO, lv -> {});
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "LocalVarBuilderNoOp");
+        assertTrue(source.contains("int x = 0;"),
+            "no-op builder should produce same output as non-builder overload");
+    }
+
+    /**
      * Verifies that a nested block generates opening and closing braces
      * surrounding the block body.
      *

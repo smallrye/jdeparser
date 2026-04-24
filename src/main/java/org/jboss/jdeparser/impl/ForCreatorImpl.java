@@ -106,13 +106,17 @@ public final class ForCreatorImpl extends AbstractCreator implements ForCreator,
             AbstractJExpr.writeExpr(writer, initExpr);
         }
         writer.write(Tokens.$PUNCT.SEMI);
-        writer.write(FormatPreferences.Space.AFTER_SEMICOLON);
+        writer.write(condition != null
+            ? FormatPreferences.Space.AFTER_SEMICOLON
+            : FormatPreferences.Space.AFTER_SEMICOLON_EMPTY);
         // condition
         if (condition != null) {
             AbstractJExpr.writeExpr(writer, condition);
         }
         writer.write(Tokens.$PUNCT.SEMI);
-        writer.write(FormatPreferences.Space.AFTER_SEMICOLON);
+        writer.write(update != null
+            ? FormatPreferences.Space.AFTER_SEMICOLON
+            : FormatPreferences.Space.AFTER_SEMICOLON_EMPTY);
         // update
         if (update != null) {
             AbstractJExpr.writeExpr(writer, update);

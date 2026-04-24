@@ -260,11 +260,13 @@ public final class ConstructorCreatorImpl extends AbstractCreator implements Con
         }
         writer.writeClass(className);
         writer.write(Tokens.$PAREN.OPEN);
-        AbstractJExpr.writeList(writer, params, FormatPreferences.Space.AFTER_COMMA);
+        AbstractJExpr.writeList(writer, params, FormatPreferences.Space.AFTER_COMMA,
+            FormatPreferences.Wrapping.PARAMETER_LIST);
         writer.write(Tokens.$PAREN.CLOSE);
         if (!throwsTypes.isEmpty()) {
             writer.write(Tokens.$KW.THROWS);
-            AbstractJExpr.writeList(writer, throwsTypes, FormatPreferences.Space.AFTER_COMMA);
+            AbstractJExpr.writeList(writer, throwsTypes, FormatPreferences.Space.AFTER_COMMA,
+                FormatPreferences.Wrapping.EXCEPTION_LIST);
         }
         writer.write(FormatPreferences.Space.BEFORE_BRACE_METHOD);
         if (body != null) {

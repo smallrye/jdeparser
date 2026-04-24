@@ -266,7 +266,7 @@ public final class RecordCreatorImpl extends AbstractCreator implements RecordCr
         writeComponents(writer);
         if (!interfaces.isEmpty()) {
             writer.write(Tokens.$KW.IMPLEMENTS);
-            writeTypeList(writer, interfaces);
+            writeTypeList(writer, interfaces, FormatPreferences.Wrapping.IMPLEMENTS_LIST);
         }
         writer.write(FormatPreferences.Space.BEFORE_BRACE_RECORD);
         writer.write(Tokens.$BRACE.OPEN);
@@ -313,18 +313,21 @@ public final class RecordCreatorImpl extends AbstractCreator implements RecordCr
     private void writeComponents(final SourceFileWriter writer) throws IOException {
         writer.write(FormatPreferences.Space.BEFORE_PAREN_RECORD);
         writer.write(Tokens.$PAREN.OPEN);
-        AbstractJExpr.writeList(writer, components, FormatPreferences.Space.AFTER_COMMA_RECORD_COMPONENT);
+        AbstractJExpr.writeList(writer, components, FormatPreferences.Space.AFTER_COMMA_RECORD_COMPONENT,
+            FormatPreferences.Wrapping.RECORD_COMPONENT_LIST);
         writer.write(Tokens.$PAREN.CLOSE);
     }
 
     /**
-     * Writes a comma-separated list of types.
+     * Writes a comma-separated list of types with wrapping support.
      *
-     * @param writer the writer
-     * @param types  the types
+     * @param writer   the writer
+     * @param types    the types
+     * @param wrapping the wrapping context
      * @throws IOException if an I/O error occurs
      */
-    private static void writeTypeList(final SourceFileWriter writer, final List<JType> types) throws IOException {
-        AbstractJExpr.writeList(writer, types, FormatPreferences.Space.AFTER_COMMA);
+    private static void writeTypeList(final SourceFileWriter writer, final List<JType> types,
+                                      final FormatPreferences.Wrapping wrapping) throws IOException {
+        AbstractJExpr.writeList(writer, types, FormatPreferences.Space.AFTER_COMMA, wrapping);
     }
 }

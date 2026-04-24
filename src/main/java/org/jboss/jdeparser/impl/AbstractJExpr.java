@@ -148,6 +148,72 @@ public abstract non-sealed class AbstractJExpr implements JExpr, Writable {
         }
     }
 
+    /**
+     * Writes a comma-separated list of writable items with wrapping support.
+     *
+     * @param writer   the source file writer
+     * @param items    the items to write
+     * @param space    the spacing rule to apply after each comma when not wrapping
+     * @param wrapping the wrapping context
+     * @throws IOException if an I/O error occurs
+     */
+    protected static void writeList(final SourceFileWriter writer, final List<?> items,
+                                    final FormatPreferences.Space space,
+                                    final FormatPreferences.Wrapping wrapping) throws IOException {
+        writeList(writer, items, null, Tokens.$PUNCT.COMMA, space, wrapping);
+    }
+
+    /**
+     * Writes a delimiter-separated list of writable items with wrapping support.
+     * <p>
+     * When the wrapping mode is {@link FormatPreferences.WrappingMode#ALWAYS_WRAP},
+     * each element after the first is placed on a new line.  When the mode is
+     * {@link FormatPreferences.WrappingMode#WRAP_ONLY_IF_LONG}, elements wrap to
+     * a new line when the current column reaches the configured line length.
+     * In both wrapping modes, continuation lines are indented by
+     * {@link FormatPreferences.Indentation#LINE_CONTINUATION}.
+     *
+     * @param writer      the source file writer
+     * @param items       the items to write
+     * @param beforeSpace the spacing rule to apply before each delimiter (may be {@code null})
+     * @param token       the delimiter token
+     * @param afterSpace  the spacing rule to apply after each delimiter when not wrapping
+     * @param wrapping    the wrapping context
+     * @throws IOException if an I/O error occurs
+     */
+    protected static void writeList(final SourceFileWriter writer, final List<?> items,
+                                    final FormatPreferences.Space beforeSpace,
+                                    final Token token,
+                                    final FormatPreferences.Space afterSpace,
+                                    final FormatPreferences.Wrapping wrapping) throws IOException {
+        int size = items.size();
+        if (size == 0) {
+            return;
+        }
+        FormatPreferences.WrappingMode mode = writer.getFormat().getWrapMode(wrapping);
+        boolean alwaysWrap = mode == FormatPreferences.WrappingMode.ALWAYS_WRAP;
+        boolean wrapIfLong = mode == FormatPreferences.WrappingMode.WRAP_ONLY_IF_LONG;
+        if (alwaysWrap || wrapIfLong) {
+            writer.pushIndent(FormatPreferences.Indentation.LINE_CONTINUATION);
+        }
+        ((Writable) items.get(0)).write(writer);
+        for (int i = 1; i < size; i++) {
+            if (beforeSpace != null) {
+                writer.write(beforeSpace);
+            }
+            writer.write(token);
+            if (alwaysWrap || (wrapIfLong && writer.getColumn() >= writer.getLineLength())) {
+                writer.nl();
+            } else if (afterSpace != null) {
+                writer.write(afterSpace);
+            }
+            ((Writable) items.get(i)).write(writer);
+        }
+        if (alwaysWrap || wrapIfLong) {
+            writer.popIndent(FormatPreferences.Indentation.LINE_CONTINUATION);
+        }
+    }
+
     // ── Precedence and associativity ──────────────────────────────────────
 
     /**

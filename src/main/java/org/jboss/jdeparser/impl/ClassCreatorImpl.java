@@ -362,11 +362,11 @@ public final class ClassCreatorImpl extends AbstractCreator implements ClassCrea
         }
         if (!interfaces.isEmpty()) {
             writer.write(Tokens.$KW.IMPLEMENTS);
-            writeTypeList(writer, interfaces);
+            writeTypeList(writer, interfaces, FormatPreferences.Wrapping.IMPLEMENTS_LIST);
         }
         if (!permits.isEmpty()) {
             writer.write(Tokens.$KW.PERMITS);
-            writeTypeList(writer, permits);
+            writeTypeList(writer, permits, FormatPreferences.Wrapping.PERMITS_LIST);
         }
         writer.write(FormatPreferences.Space.BEFORE_BRACE_CLASS);
         writer.write(Tokens.$BRACE.OPEN);
@@ -455,13 +455,15 @@ public final class ClassCreatorImpl extends AbstractCreator implements ClassCrea
     }
 
     /**
-     * Writes a comma-separated list of types.
+     * Writes a comma-separated list of types with wrapping support.
      *
-     * @param writer the writer
-     * @param types  the types
+     * @param writer   the writer
+     * @param types    the types
+     * @param wrapping the wrapping context
      * @throws IOException if an I/O error occurs
      */
-    private static void writeTypeList(final SourceFileWriter writer, final List<JType> types) throws IOException {
-        AbstractJExpr.writeList(writer, types, FormatPreferences.Space.AFTER_COMMA);
+    private static void writeTypeList(final SourceFileWriter writer, final List<JType> types,
+                                      final FormatPreferences.Wrapping wrapping) throws IOException {
+        AbstractJExpr.writeList(writer, types, FormatPreferences.Space.AFTER_COMMA, wrapping);
     }
 }

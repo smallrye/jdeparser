@@ -135,7 +135,8 @@ public final class EnumConstantCreatorImpl extends AbstractCreator implements En
         if (!args.isEmpty()) {
             writer.write(Tokens.$PAREN.OPEN);
             writer.write(FormatPreferences.Space.WITHIN_PAREN_METHOD_CALL);
-            AbstractJExpr.writeList(writer, args, FormatPreferences.Space.AFTER_COMMA);
+            AbstractJExpr.writeList(writer, args, FormatPreferences.Space.AFTER_COMMA,
+                FormatPreferences.Wrapping.ARGUMENT_LIST);
             writer.write(FormatPreferences.Space.WITHIN_PAREN_METHOD_CALL);
             writer.write(Tokens.$PAREN.CLOSE);
         } else if (writer.getFormat().hasOption(FormatPreferences.Opt.ENUM_EMPTY_PARENS)) {

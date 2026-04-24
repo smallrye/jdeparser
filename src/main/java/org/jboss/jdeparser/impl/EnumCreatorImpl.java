@@ -223,7 +223,7 @@ public final class EnumCreatorImpl extends AbstractCreator implements EnumCreato
         writer.writeClass(name);
         if (!interfaces.isEmpty()) {
             writer.write(Tokens.$KW.IMPLEMENTS);
-            writeTypeList(writer, interfaces);
+            writeTypeList(writer, interfaces, FormatPreferences.Wrapping.IMPLEMENTS_LIST);
         }
         writer.write(FormatPreferences.Space.BEFORE_BRACE_ENUM);
         writer.write(Tokens.$BRACE.OPEN);
@@ -232,12 +232,21 @@ public final class EnumCreatorImpl extends AbstractCreator implements EnumCreato
         } else {
             writer.nl();
             writer.pushIndent(FormatPreferences.Indentation.MEMBERS_TOP_LEVEL);
-            // write constants separated by commas
+            // write constants separated by commas, with wrapping support
+            FormatPreferences.WrappingMode enumWrapMode = writer.getFormat()
+                .getWrapMode(FormatPreferences.Wrapping.ENUM_CONSTANT_LIST);
+            boolean enumAlwaysWrap = enumWrapMode == FormatPreferences.WrappingMode.ALWAYS_WRAP;
+            boolean enumWrapIfLong = enumWrapMode == FormatPreferences.WrappingMode.WRAP_ONLY_IF_LONG;
             boolean firstConstant = true;
             for (EnumConstantCreatorImpl constant : constants) {
                 if (!firstConstant) {
                     writer.write(Tokens.$PUNCT.COMMA);
-                    writer.write(FormatPreferences.Space.COMMA_ENUM_CONSTANT);
+                    if (enumAlwaysWrap
+                            || (enumWrapIfLong && writer.getColumn() >= writer.getLineLength())) {
+                        writer.nl();
+                    } else {
+                        writer.write(FormatPreferences.Space.COMMA_ENUM_CONSTANT);
+                    }
                 }
                 firstConstant = false;
                 constant.write(writer);
@@ -269,13 +278,15 @@ public final class EnumCreatorImpl extends AbstractCreator implements EnumCreato
     }
 
     /**
-     * Writes a comma-separated list of types.
+     * Writes a comma-separated list of types with wrapping support.
      *
-     * @param writer the writer
-     * @param types  the types
+     * @param writer   the writer
+     * @param types    the types
+     * @param wrapping the wrapping context
      * @throws IOException if an I/O error occurs
      */
-    private static void writeTypeList(final SourceFileWriter writer, final List<JType> types) throws IOException {
-        AbstractJExpr.writeList(writer, types, FormatPreferences.Space.AFTER_COMMA);
+    private static void writeTypeList(final SourceFileWriter writer, final List<JType> types,
+                                      final FormatPreferences.Wrapping wrapping) throws IOException {
+        AbstractJExpr.writeList(writer, types, FormatPreferences.Space.AFTER_COMMA, wrapping);
     }
 }

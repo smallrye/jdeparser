@@ -310,7 +310,8 @@ public final class MethodCreatorImpl extends AbstractCreator implements MethodCr
      */
     private void writeParams(final SourceFileWriter writer) throws IOException {
         writer.write(Tokens.$PAREN.OPEN);
-        AbstractJExpr.writeList(writer, params, FormatPreferences.Space.AFTER_COMMA);
+        AbstractJExpr.writeList(writer, params, FormatPreferences.Space.AFTER_COMMA,
+            FormatPreferences.Wrapping.PARAMETER_LIST);
         writer.write(Tokens.$PAREN.CLOSE);
     }
 
@@ -325,6 +326,7 @@ public final class MethodCreatorImpl extends AbstractCreator implements MethodCr
             return;
         }
         writer.write(Tokens.$KW.THROWS);
-        AbstractJExpr.writeList(writer, throwsTypes, FormatPreferences.Space.AFTER_COMMA);
+        AbstractJExpr.writeList(writer, throwsTypes, FormatPreferences.Space.AFTER_COMMA,
+            FormatPreferences.Wrapping.EXCEPTION_LIST);
     }
 }

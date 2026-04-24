@@ -518,7 +518,8 @@ public final class BlockCreatorImpl extends AbstractCreator implements BlockCrea
         content.add(w -> {
             w.write(Tokens.$KW.THIS);
             w.write(Tokens.$PAREN.OPEN);
-            AbstractJExpr.writeList(w, argList, FormatPreferences.Space.AFTER_COMMA);
+            AbstractJExpr.writeList(w, argList, FormatPreferences.Space.AFTER_COMMA,
+                FormatPreferences.Wrapping.ARGUMENT_LIST);
             w.write(Tokens.$PAREN.CLOSE);
             w.write(Tokens.$PUNCT.SEMI);
             w.nl();
@@ -534,7 +535,8 @@ public final class BlockCreatorImpl extends AbstractCreator implements BlockCrea
         content.add(w -> {
             w.write(Tokens.$KW.SUPER);
             w.write(Tokens.$PAREN.OPEN);
-            AbstractJExpr.writeList(w, argList, FormatPreferences.Space.AFTER_COMMA);
+            AbstractJExpr.writeList(w, argList, FormatPreferences.Space.AFTER_COMMA,
+                FormatPreferences.Wrapping.ARGUMENT_LIST);
             w.write(Tokens.$PAREN.CLOSE);
             w.write(Tokens.$PUNCT.SEMI);
             w.nl();

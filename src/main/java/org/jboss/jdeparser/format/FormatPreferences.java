@@ -241,6 +241,8 @@ public final class FormatPreferences {
 
         /** After a semicolon (e.g., in {@code for} loop header). */
         AFTER_SEMICOLON,
+        /** After a semicolon that terminates an empty statement (e.g., in {@code for (;;)}). */
+        AFTER_SEMICOLON_EMPTY,
 
         // ── Annotations ─────────────────────────────────────────────
 

@@ -13,6 +13,8 @@ import org.jboss.jdeparser.format.FormatPreferences.Indentation;
 import org.jboss.jdeparser.format.FormatPreferences.Opt;
 import org.jboss.jdeparser.format.FormatPreferences.Space;
 import org.jboss.jdeparser.format.FormatPreferences.SpaceType;
+import org.jboss.jdeparser.format.FormatPreferences.Wrapping;
+import org.jboss.jdeparser.format.FormatPreferences.WrappingMode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -2336,6 +2338,7 @@ class FormattingPreferencesTest extends AbstractGeneratingTestCase {
         clearSources();
         final FormatPreferences prefs = FormatPreferences.builder()
             .space(Space.COMMA_ENUM_CONSTANT, SpaceType.SPACE)
+            .wrapMode(Wrapping.ENUM_CONSTANT_LIST, WrappingMode.NEVER)
             .build();
         final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
         modifiedSources.createSourceFile("com.example", "Dir2", sf -> {
@@ -3165,5 +3168,356 @@ class FormattingPreferencesTest extends AbstractGeneratingTestCase {
         modifiedSources.writeSources();
         final String modifiedOutput = getSource("com.example", "Color2");
         assertTrue(modifiedOutput.contains("RED( )"), "modified should have space inside empty parens");
+    }
+
+    // ── Batch 18: AFTER_SEMICOLON_EMPTY ────────────────────────────────
+
+    /**
+     * Verifies that {@link Space#AFTER_SEMICOLON_EMPTY} (default {@link SpaceType#NONE})
+     * controls the space after semicolons in {@code for(;;)} loops when the following
+     * part is absent.  With the default, {@code for(;;)} has no spaces between
+     * semicolons; setting it to {@link SpaceType#SPACE} produces {@code for(; ; )}.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void afterSemicolonEmptyForLoop() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Cls1", sf -> {
+            sf.class_("Cls1", cc -> {
+                cc.method("run", mc -> {
+                    mc.body(b -> {
+                        b.for_(fc -> {
+                            fc.body(body -> {
+                                body.break_();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Cls1");
+        assertTrue(defaultOutput.contains("for (;;)"),
+            "default (NONE) should produce for (;;) with no spaces between semicolons");
+
+        clearSources();
+        final FormatPreferences prefs = FormatPreferences.builder()
+            .space(Space.AFTER_SEMICOLON_EMPTY, SpaceType.SPACE)
+            .build();
+        final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Cls2", sf -> {
+            sf.class_("Cls2", cc -> {
+                cc.method("run", mc -> {
+                    mc.body(b -> {
+                        b.for_(fc -> {
+                            fc.body(body -> {
+                                body.break_();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Cls2");
+        assertTrue(modifiedOutput.contains("for (; ; )"),
+            "SPACE should produce for (; ; ) with spaces between semicolons");
+    }
+
+    /**
+     * Verifies that {@link Space#AFTER_SEMICOLON_EMPTY} only affects empty for-loop parts.
+     * When a for loop has a condition but no update, only the second semicolon uses
+     * {@link Space#AFTER_SEMICOLON_EMPTY}; the first semicolon still uses
+     * {@link Space#AFTER_SEMICOLON}.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void afterSemicolonEmptyMixed() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Cls1", sf -> {
+            sf.class_("Cls1", cc -> {
+                cc.method("run", mc -> {
+                    mc.body(b -> {
+                        b.for_(fc -> {
+                            fc.condition(JExpr.$v("x").gt(JExpr.ZERO));
+                            fc.body(body -> {
+                                body.break_();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Cls1");
+        // first semicolon: condition present → AFTER_SEMICOLON (SPACE)
+        // second semicolon: update absent → AFTER_SEMICOLON_EMPTY (NONE)
+        assertTrue(defaultOutput.contains("; x > 0;)"),
+            "default should have space after first ; (AFTER_SEMICOLON) but not after second ; (AFTER_SEMICOLON_EMPTY)");
+    }
+
+    // ── Batch 19: Wrapping ─────────────────────────────────────────────
+
+    /**
+     * Verifies that setting {@link Wrapping#ARGUMENT_LIST} to
+     * {@link WrappingMode#ALWAYS_WRAP} places each method call argument on its own line.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void alwaysWrapArgumentList() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Cls1", sf -> {
+            sf.class_("Cls1", cc -> {
+                cc.method("run", mc -> {
+                    mc.body(b -> {
+                        b.emit(JExpr.callPlain("method", JExpr.$v("a"), JExpr.$v("b")));
+                    });
+                });
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Cls1");
+        assertTrue(defaultOutput.contains("method(a, b)"), "default should have args on same line");
+
+        clearSources();
+        final FormatPreferences prefs = FormatPreferences.builder()
+            .wrapMode(Wrapping.ARGUMENT_LIST, WrappingMode.ALWAYS_WRAP)
+            .build();
+        final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Cls2", sf -> {
+            sf.class_("Cls2", cc -> {
+                cc.method("run", mc -> {
+                    mc.body(b -> {
+                        b.emit(JExpr.callPlain("method", JExpr.$v("a"), JExpr.$v("b")));
+                    });
+                });
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Cls2");
+        assertFalse(modifiedOutput.contains("method(a, b)"),
+            "ALWAYS_WRAP should not have both args on same line");
+        assertFalse(modifiedOutput.contains(", b"),
+            "ALWAYS_WRAP should wrap after comma instead of adding space");
+    }
+
+    /**
+     * Verifies that setting {@link Wrapping#PARAMETER_LIST} to
+     * {@link WrappingMode#ALWAYS_WRAP} places each method parameter on its own line.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void alwaysWrapParameterList() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Cls1", sf -> {
+            sf.class_("Cls1", cc -> {
+                cc.method("run", mc -> {
+                    mc.param("a", JType.INT);
+                    mc.param("b", JType.INT);
+                    mc.body(b -> {});
+                });
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Cls1");
+        assertTrue(defaultOutput.contains("int a, int b"),
+            "default should have params on same line");
+
+        clearSources();
+        final FormatPreferences prefs = FormatPreferences.builder()
+            .wrapMode(Wrapping.PARAMETER_LIST, WrappingMode.ALWAYS_WRAP)
+            .build();
+        final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Cls2", sf -> {
+            sf.class_("Cls2", cc -> {
+                cc.method("run", mc -> {
+                    mc.param("a", JType.INT);
+                    mc.param("b", JType.INT);
+                    mc.body(b -> {});
+                });
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Cls2");
+        assertFalse(modifiedOutput.contains("int a, int b"),
+            "ALWAYS_WRAP should not have params on same line");
+    }
+
+    /**
+     * Verifies that setting {@link Wrapping#IMPLEMENTS_LIST} to
+     * {@link WrappingMode#ALWAYS_WRAP} places each implemented interface on its own line.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void alwaysWrapImplementsList() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Cls1", sf -> {
+            sf.class_("Cls1", cc -> {
+                cc.implements_(JType.named("java.io.Serializable"));
+                cc.implements_(JType.named("java.lang.Comparable"));
+                cc.method("compareTo", mc -> {
+                    mc.param("o", JType.OBJECT);
+                    mc.returning(JType.INT);
+                    mc.body(b -> {
+                        b.return_(JExpr.ZERO);
+                    });
+                });
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Cls1");
+        assertTrue(defaultOutput.contains("Serializable, Comparable"),
+            "default should have interfaces on same line");
+
+        clearSources();
+        final FormatPreferences prefs = FormatPreferences.builder()
+            .wrapMode(Wrapping.IMPLEMENTS_LIST, WrappingMode.ALWAYS_WRAP)
+            .build();
+        final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Cls2", sf -> {
+            sf.class_("Cls2", cc -> {
+                cc.implements_(JType.named("java.io.Serializable"));
+                cc.implements_(JType.named("java.lang.Comparable"));
+                cc.method("compareTo", mc -> {
+                    mc.param("o", JType.OBJECT);
+                    mc.returning(JType.INT);
+                    mc.body(b -> {
+                        b.return_(JExpr.ZERO);
+                    });
+                });
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Cls2");
+        assertFalse(modifiedOutput.contains("Serializable, Comparable"),
+            "ALWAYS_WRAP should not have interfaces on same line");
+    }
+
+    /**
+     * Verifies that setting {@link Wrapping#EXCEPTION_LIST} to
+     * {@link WrappingMode#ALWAYS_WRAP} places each thrown exception type on its own line.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void alwaysWrapExceptionList() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Cls1", sf -> {
+            sf.class_("Cls1", cc -> {
+                cc.method("run", mc -> {
+                    mc.throws_(JType.named("java.io.IOException"));
+                    mc.throws_(JType.named("java.sql.SQLException"));
+                    mc.body(b -> {});
+                });
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Cls1");
+        assertTrue(defaultOutput.contains("IOException, "),
+            "default should have exceptions on same line");
+
+        clearSources();
+        final FormatPreferences prefs = FormatPreferences.builder()
+            .wrapMode(Wrapping.EXCEPTION_LIST, WrappingMode.ALWAYS_WRAP)
+            .build();
+        final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Cls2", sf -> {
+            sf.class_("Cls2", cc -> {
+                cc.method("run", mc -> {
+                    mc.throws_(JType.named("java.io.IOException"));
+                    mc.throws_(JType.named("java.sql.SQLException"));
+                    mc.body(b -> {});
+                });
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Cls2");
+        assertFalse(modifiedOutput.contains("IOException, "),
+            "ALWAYS_WRAP should not have exceptions on same line");
+    }
+
+    /**
+     * Verifies that {@link Wrapping#ENUM_CONSTANT_LIST} defaults to
+     * {@link WrappingMode#ALWAYS_WRAP} (each constant on its own line), and that
+     * setting it to {@link WrappingMode#NEVER} with
+     * {@link Space#COMMA_ENUM_CONSTANT} set to {@link SpaceType#SPACE} places
+     * all constants on one line.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void enumConstantListWrapping() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Dir", sf -> {
+            sf.enum_("Dir", ec -> {
+                ec.constant("N", c -> {});
+                ec.constant("S", c -> {});
+                ec.constant("E", c -> {});
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Dir");
+        assertFalse(defaultOutput.contains("N, S"),
+            "default (ALWAYS_WRAP) should not have constants on same line");
+
+        clearSources();
+        final FormatPreferences prefs = FormatPreferences.builder()
+            .wrapMode(Wrapping.ENUM_CONSTANT_LIST, WrappingMode.NEVER)
+            .space(Space.COMMA_ENUM_CONSTANT, SpaceType.SPACE)
+            .build();
+        final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Dir2", sf -> {
+            sf.enum_("Dir2", ec -> {
+                ec.constant("N", c -> {});
+                ec.constant("S", c -> {});
+                ec.constant("E", c -> {});
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Dir2");
+        assertTrue(modifiedOutput.contains("N, S, E"),
+            "NEVER wrap should have all constants on same line");
+    }
+
+    /**
+     * Verifies that setting {@link Wrapping#RECORD_COMPONENT_LIST} to
+     * {@link WrappingMode#ALWAYS_WRAP} places each record component on its own line.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void alwaysWrapRecordComponentList() throws IOException {
+        final JSources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Point", sf -> {
+            sf.record_("Point", rc -> {
+                rc.component("x", JType.INT);
+                rc.component("y", JType.INT);
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Point");
+        assertTrue(defaultOutput.contains("int x, int y"),
+            "default should have components on same line");
+
+        clearSources();
+        final FormatPreferences prefs = FormatPreferences.builder()
+            .wrapMode(Wrapping.RECORD_COMPONENT_LIST, WrappingMode.ALWAYS_WRAP)
+            .build();
+        final JSources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Point2", sf -> {
+            sf.record_("Point2", rc -> {
+                rc.component("x", JType.INT);
+                rc.component("y", JType.INT);
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Point2");
+        assertFalse(modifiedOutput.contains("int x, int y"),
+            "ALWAYS_WRAP should not have components on same line");
     }
 }

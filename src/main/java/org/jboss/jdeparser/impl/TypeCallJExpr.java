@@ -76,7 +76,8 @@ public final class TypeCallJExpr extends AbstractJExpr {
         writer.write(Tokens.$PUNCT.DOT);
         writer.writeName(method);
         writer.write(Tokens.$PAREN.OPEN);
-        writeList(writer, args, FormatPreferences.Space.AFTER_COMMA);
+        writeList(writer, args, FormatPreferences.Space.AFTER_COMMA,
+            FormatPreferences.Wrapping.ARGUMENT_LIST);
         writer.write(Tokens.$PAREN.CLOSE);
     }
 }

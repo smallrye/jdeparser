@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.creator.AccessLevel;
 import io.smallrye.jdeparser.creator.AnnotationCreator;
 import io.smallrye.jdeparser.creator.BlockCreator;
@@ -80,18 +81,19 @@ public final class ConstructorCreatorImpl extends AbstractCreator implements Con
 
     /** {@inheritDoc} */
     @Override
-    public void param(final String name, final Type type) {
+    public Var param(final String name, final Type type) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
         Assert.checkNotNullParam("type", type);
         registerUsedType(type);
         params.add(new ParamCreatorImpl(version(), name, type, false));
+        return new NamedVar(name);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void param(final String name, final Type type, final Consumer<ParamCreator> builder) {
+    public Var param(final String name, final Type type, final Consumer<ParamCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
@@ -106,11 +108,12 @@ public final class ConstructorCreatorImpl extends AbstractCreator implements Con
         if (pc.docComment() != null) {
             getOrCreateDocComment().addParamTag(name, pc.docComment());
         }
+        return new NamedVar(name);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void varargParam(final String name, final Type type, final Consumer<ParamCreator> builder) {
+    public Var varargParam(final String name, final Type type, final Consumer<ParamCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
@@ -125,6 +128,7 @@ public final class ConstructorCreatorImpl extends AbstractCreator implements Con
         if (pc.docComment() != null) {
             getOrCreateDocComment().addParamTag(name, pc.docComment());
         }
+        return new NamedVar(name);
     }
 
     /** {@inheritDoc} */

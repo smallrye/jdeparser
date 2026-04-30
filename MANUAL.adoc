@@ -1288,8 +1288,8 @@ public class ExprLambdaBlock {
         Expr lambda1 = Expr.lambda(lc -> {
             Var x = lc.param("x");
             lc.body(body -> {
-                body.var(Type.INT, "y", x.mul(Expr.decimal(2)));
-                body.return_(Expr.$v("y"));
+                Var y = body.var(Type.INT, "y", x.mul(Expr.decimal(2)));
+                body.return_(y);
             });
         });
 

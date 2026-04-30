@@ -3,6 +3,7 @@ package io.smallrye.jdeparser.creator;
 import java.util.function.Consumer;
 
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.impl.MethodCreatorImpl;
 
 /**
@@ -26,8 +27,9 @@ public sealed interface MethodCreator extends ModifiableCreator permits MethodCr
      *
      * @param name the parameter name
      * @param type the parameter type
+     * @return a variable expression referencing the declared parameter
      */
-    void param(String name, Type type);
+    Var param(String name, Type type);
 
     /**
      * Adds a parameter to this method with configuration.
@@ -35,8 +37,9 @@ public sealed interface MethodCreator extends ModifiableCreator permits MethodCr
      * @param name the parameter name
      * @param type the parameter type
      * @param builder the callback to configure the parameter (annotations, docs, etc.)
+     * @return a variable expression referencing the declared parameter
      */
-    void param(String name, Type type, Consumer<ParamCreator> builder);
+    Var param(String name, Type type, Consumer<ParamCreator> builder);
 
     /**
      * Adds a varargs parameter to this method.
@@ -44,8 +47,9 @@ public sealed interface MethodCreator extends ModifiableCreator permits MethodCr
      * @param name the parameter name
      * @param type the array element type (not the array type)
      * @param builder the callback to configure the parameter
+     * @return a variable expression referencing the declared parameter
      */
-    void varargParam(String name, Type type, Consumer<ParamCreator> builder);
+    Var varargParam(String name, Type type, Consumer<ParamCreator> builder);
 
     /**
      * Adds a thrown exception type to this method.

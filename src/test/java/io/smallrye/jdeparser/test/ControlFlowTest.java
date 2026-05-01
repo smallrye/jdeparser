@@ -1,6 +1,7 @@
 package io.smallrye.jdeparser.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -145,7 +146,7 @@ class ControlFlowTest extends AbstractGeneratingTestCase {
      * @throws IOException if source generation fails
      */
     @Test
-    void switchStatement() throws IOException {
+    void switchClassicStatement() throws IOException {
         final Sources sources = createSources(SourceVersion.JAVA_17);
         sources.createSourceFile("com.example", "SwitchStmt", sf -> {
             sf.class_("SwitchStmt", cc -> {
@@ -153,7 +154,7 @@ class ControlFlowTest extends AbstractGeneratingTestCase {
                     mc.param("x", Type.INT);
                     mc.returning(Type.STRING);
                     mc.body(b -> {
-                        b.switch_(Expr.$v("x"), sw -> {
+                        b.switchClassic(Expr.$v("x"), sw -> {
                             sw.case_(Expr.ZERO, body -> {
                                 body.return_(Expr.str("zero"));
                             });
@@ -176,6 +177,164 @@ class ControlFlowTest extends AbstractGeneratingTestCase {
         assertTrue(source.contains("default:"), "should contain default label");
         assertTrue(source.contains("return \"zero\";"), "should contain case 0 body");
         assertTrue(source.contains("return \"other\";"), "should contain default body");
+    }
+
+    /**
+     * Verifies that a modern arrow-style switch statement renders with arrow syntax
+     * and single-statement bodies without braces.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void switchArrowStatement() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "SwitchArrow", sf -> {
+            sf.class_("SwitchArrow", cc -> {
+                cc.method("classify", mc -> {
+                    mc.param("x", Type.INT);
+                    mc.returning(Type.STRING);
+                    mc.body(b -> {
+                        b.switch_(Expr.$v("x"), sw -> {
+                            sw.case_(Expr.ZERO, body -> {
+                                body.return_(Expr.str("zero"));
+                            });
+                            sw.case_(Expr.ONE, body -> {
+                                body.return_(Expr.str("one"));
+                            });
+                            sw.default_(body -> {
+                                body.return_(Expr.str("other"));
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "SwitchArrow");
+        assertTrue(source.contains("switch (x)"), "should contain switch selector");
+        assertTrue(source.contains("case 0 ->"), "should contain arrow case 0 label");
+        assertTrue(source.contains("case 1 ->"), "should contain arrow case 1 label");
+        assertTrue(source.contains("default ->"), "should contain arrow default label");
+        assertFalse(source.contains("case 0:"), "should not contain colon case label");
+        assertTrue(source.contains("return \"zero\";"), "should contain case 0 body");
+    }
+
+    /**
+     * Verifies that a modern switch with multi-value cases renders correctly.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void switchArrowMultiValueCase() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "SwitchMulti", sf -> {
+            sf.class_("SwitchMulti", cc -> {
+                cc.method("classify", mc -> {
+                    mc.param("x", Type.INT);
+                    mc.returning(Type.STRING);
+                    mc.body(b -> {
+                        b.switch_(Expr.$v("x"), sw -> {
+                            sw.case_(java.util.List.of(Expr.decimal(1), Expr.decimal(2), Expr.decimal(3)), body -> {
+                                body.return_(Expr.str("low"));
+                            });
+                            sw.default_(body -> {
+                                body.return_(Expr.str("high"));
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "SwitchMulti");
+        assertTrue(source.contains("case 1, 2, 3 ->"), "should contain multi-value arrow case");
+    }
+
+    /**
+     * Verifies that arrow switch with a null case renders correctly.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void switchArrowNullCase() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "SwitchNull", sf -> {
+            sf.class_("SwitchNull", cc -> {
+                cc.method("classify", mc -> {
+                    mc.param("x", Type.named("java.lang.String"));
+                    mc.returning(Type.STRING);
+                    mc.body(b -> {
+                        b.switch_(Expr.$v("x"), sw -> {
+                            sw.case_(Expr.NULL, body -> {
+                                body.return_(Expr.str("null value"));
+                            });
+                            sw.default_(body -> {
+                                body.return_(Expr.str("non-null"));
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "SwitchNull");
+        assertTrue(source.contains("case null ->"), "should contain null arrow case");
+    }
+
+    /**
+     * Verifies that classic switch rejects null case values.
+     */
+    @Test
+    void switchClassicRejectsNull() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            final Sources sources = createSources(SourceVersion.JAVA_17);
+            sources.createSourceFile("com.example", "SwitchNull", sf -> {
+                sf.class_("SwitchNull", cc -> {
+                    cc.method("test", mc -> {
+                        mc.returning(Type.VOID);
+                        mc.body(b -> {
+                            b.switchClassic(Expr.$v("x"), sw -> {
+                                sw.case_(Expr.NULL, body -> {
+                                    body.break_();
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * Verifies that arrow switch with multi-statement body renders with braces.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void switchArrowBlockBody() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "SwitchBlock", sf -> {
+            sf.class_("SwitchBlock", cc -> {
+                cc.method("process", mc -> {
+                    mc.param("x", Type.INT);
+                    mc.returning(Type.VOID);
+                    mc.body(b -> {
+                        b.switch_(Expr.$v("x"), sw -> {
+                            sw.case_(Expr.ZERO, body -> {
+                                body.emit(Expr.$v("System").field("out").call("println", Expr.str("zero")));
+                                body.break_();
+                            });
+                            sw.default_(body -> {
+                                body.break_();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "SwitchBlock");
+        assertTrue(source.contains("case 0 -> {"), "multi-statement arrow case should use braces");
     }
 
     /**

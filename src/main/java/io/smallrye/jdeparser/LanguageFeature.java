@@ -45,6 +45,8 @@ public enum LanguageFeature {
 
     /** Switch expressions ({@code switch} as an expression with {@code yield}). */
     SWITCH_EXPRESSIONS(SourceVersion.JAVA_14),
+    /** Arrow-style cases in {@code switch} statements ({@code case X -> ...}). */
+    SWITCH_ARROW_CASES(SourceVersion.JAVA_14),
 
     // ---- Java 15 ----
 

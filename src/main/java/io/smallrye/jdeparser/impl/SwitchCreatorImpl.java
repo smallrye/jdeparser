@@ -15,8 +15,17 @@ import io.smallrye.jdeparser.creator.SwitchCreator;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
 /**
- * Implementation of {@link SwitchCreator} that collects switch cases
- * and writes the complete switch block.
+ * Implementation of {@link SwitchCreator} that renders switch cases
+ * using arrow ({@code ->}) syntax with no fall-through.
+ * <p>
+ * Arrow case bodies are rendered in one of three forms, controlled by the
+ * {@link FormatPreferences.Opt#SWITCH_ARROW_ALWAYS_BLOCK_BODY} option:
+ * <ul>
+ * <li>Single yield expression (in switch expressions): {@code case X -> expr;}</li>
+ * <li>Single statement: {@code case X -> stmt;}</li>
+ * <li>Block (multiple statements or forced by format option):
+ * {@code case X -> { stmts... }}</li>
+ * </ul>
  */
 public final class SwitchCreatorImpl extends AbstractCreator implements SwitchCreator {
 
@@ -34,28 +43,6 @@ public final class SwitchCreatorImpl extends AbstractCreator implements SwitchCr
 
     /** {@inheritDoc} */
     @Override
-    public void case_(final Expr value, final Consumer<BlockCreator> body) {
-        checkActive();
-        Assert.checkNotNullParam("value", value);
-        Assert.checkNotNullParam("body", body);
-        final BlockCreatorImpl block = new BlockCreatorImpl(version());
-        block.sourceFile(sourceFile());
-        nest(() -> body.accept(block));
-        block.finish();
-        cases.add(w -> {
-            w.write(Tokens.$KW.CASE);
-            AbstractExpr.writeExpr(w, value);
-            w.write(Tokens.$PUNCT.COLON);
-            w.nl();
-            w.pushIndent(FormatPreferences.Indentation.LINE);
-            block.writeBlock(w);
-            w.nl();
-            w.popIndent(FormatPreferences.Indentation.LINE);
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public void case_(final List<Expr> values, final Consumer<BlockCreator> body) {
         checkActive();
         Assert.checkNotNullParam("values", values);
@@ -68,12 +55,7 @@ public final class SwitchCreatorImpl extends AbstractCreator implements SwitchCr
         cases.add(w -> {
             w.write(Tokens.$KW.CASE);
             AbstractExpr.writeList(w, values, FormatPreferences.Space.AFTER_COMMA);
-            w.write(Tokens.$PUNCT.COLON);
-            w.nl();
-            w.pushIndent(FormatPreferences.Indentation.LINE);
-            block.writeBlock(w);
-            w.nl();
-            w.popIndent(FormatPreferences.Indentation.LINE);
+            writeArrowBody(w, block);
         });
     }
 
@@ -90,6 +72,9 @@ public final class SwitchCreatorImpl extends AbstractCreator implements SwitchCr
         cc.sourceFile(sourceFile());
         nest(() -> builder.accept(cc));
         cc.finish();
+        if (cc.body() == null) {
+            throw new IllegalStateException("Case body was not defined; body() must be called");
+        }
         cases.add(w -> {
             w.write(Tokens.$KW.CASE);
             AbstractExpr.writeType(w, type);
@@ -99,35 +84,7 @@ public final class SwitchCreatorImpl extends AbstractCreator implements SwitchCr
                 w.write(Tokens.$KW.WHEN);
                 AbstractExpr.writeExpr(w, cc.guard());
             }
-            w.write(Tokens.$PUNCT.COLON);
-            w.nl();
-            if (cc.body() != null) {
-                w.pushIndent(FormatPreferences.Indentation.LINE);
-                cc.body().writeBlock(w);
-                w.nl();
-                w.popIndent(FormatPreferences.Indentation.LINE);
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void caseNull(final Consumer<BlockCreator> body) {
-        checkActive();
-        Assert.checkNotNullParam("body", body);
-        final BlockCreatorImpl block = new BlockCreatorImpl(version());
-        block.sourceFile(sourceFile());
-        nest(() -> body.accept(block));
-        block.finish();
-        cases.add(w -> {
-            w.write(Tokens.$KW.CASE);
-            w.write(Tokens.$KW.NULL);
-            w.write(Tokens.$PUNCT.COLON);
-            w.nl();
-            w.pushIndent(FormatPreferences.Indentation.LINE);
-            block.writeBlock(w);
-            w.nl();
-            w.popIndent(FormatPreferences.Indentation.LINE);
+            writeArrowBody(w, cc.body());
         });
     }
 
@@ -142,13 +99,42 @@ public final class SwitchCreatorImpl extends AbstractCreator implements SwitchCr
         block.finish();
         cases.add(w -> {
             w.write(Tokens.$KW.DEFAULT);
-            w.write(Tokens.$PUNCT.COLON);
-            w.nl();
-            w.pushIndent(FormatPreferences.Indentation.LINE);
-            block.writeBlock(w);
-            w.nl();
-            w.popIndent(FormatPreferences.Indentation.LINE);
+            writeArrowBody(w, block);
         });
+    }
+
+    /**
+     * Writes an arrow case body, choosing between expression, single-statement,
+     * and block forms based on the body content and format preferences.
+     *
+     * @param w the writer
+     * @param block the case body block
+     * @throws IOException if an I/O error occurs
+     */
+    private static void writeArrowBody(final SourceFileWriter w,
+            final BlockCreatorImpl block) throws IOException {
+        w.write(Tokens.$BINOP.ARROW);
+        boolean forceBlock = w.getFormat().hasOption(
+                FormatPreferences.Opt.SWITCH_ARROW_ALWAYS_BLOCK_BODY);
+        if (!forceBlock) {
+            // strip yield for switch expression single-yield bodies
+            Expr yieldExpr = block.singleYieldExpr();
+            if (yieldExpr != null) {
+                AbstractExpr.writeExpr(w, yieldExpr);
+                w.write(Tokens.$PUNCT.SEMI);
+                w.nl();
+                return;
+            }
+            // single statement rendered without braces
+            Writable single = block.singleStatement();
+            if (single != null) {
+                single.write(w);
+                return;
+            }
+        }
+        // block form
+        block.writeBlock(w);
+        w.nl();
     }
 
     /**

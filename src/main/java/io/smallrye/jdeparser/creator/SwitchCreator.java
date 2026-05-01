@@ -8,25 +8,35 @@ import io.smallrye.jdeparser.Type;
 import io.smallrye.jdeparser.impl.SwitchCreatorImpl;
 
 /**
- * A creator for configuring a {@code switch} statement or expression.
+ * A creator for configuring a modern {@code switch} statement or expression
+ * using arrow ({@code ->}) syntax with no fall-through.
  * <p>
- * Supports constant cases, multi-value cases, type pattern cases (Java 21+),
- * null cases, and default cases.
+ * Extends {@link ClassicSwitchCreator} with support for multi-value cases,
+ * type pattern cases (Java 21+), and {@code null} cases.
+ * The single-value {@link #case_(Expr, Consumer)} method is provided as a
+ * convenience that delegates to {@link #case_(List, Consumer)}.
+ *
+ * @see ClassicSwitchCreator
+ * @see BlockCreator#switch_(Expr, Consumer)
  */
-public sealed interface SwitchCreator permits SwitchCreatorImpl {
+public sealed interface SwitchCreator extends ClassicSwitchCreator permits SwitchCreatorImpl {
 
     /**
-     * Adds a case with a single constant value.
-     *
-     * @param value the case constant expression
-     * @param body the callback for the case body
+     * {@inheritDoc}
+     * <p>
+     * This convenience method delegates to {@link #case_(List, Consumer)}
+     * with a single-element list.
      */
-    void case_(Expr value, Consumer<BlockCreator> body);
+    @Override
+    default void case_(final Expr value, final Consumer<BlockCreator> body) {
+        case_(List.of(value), body);
+    }
 
     /**
-     * Adds a case with multiple constant values (e.g., {@code case 3, 5, 6:}).
+     * Adds a case with one or more constant values using arrow syntax:
+     * {@code case val1, val2 -> ...}.
      *
-     * @param values the case constant expressions
+     * @param values the case constant expressions (must not be empty)
      * @param body the callback for the case body
      */
     void case_(List<Expr> values, Consumer<BlockCreator> body);
@@ -39,18 +49,4 @@ public sealed interface SwitchCreator permits SwitchCreatorImpl {
      * @param builder the callback to configure the case (may include guard via {@link CaseCreator#when_(Expr)})
      */
     void case_(Type type, String name, Consumer<CaseCreator> builder);
-
-    /**
-     * Adds a {@code case null} (Java 21+).
-     *
-     * @param body the callback for the case body
-     */
-    void caseNull(Consumer<BlockCreator> body);
-
-    /**
-     * Adds a {@code default} case.
-     *
-     * @param body the callback for the default body
-     */
-    void default_(Consumer<BlockCreator> body);
 }

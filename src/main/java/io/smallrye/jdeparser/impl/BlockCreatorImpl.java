@@ -15,6 +15,7 @@ import io.smallrye.jdeparser.Type;
 import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.creator.BlockCreator;
 import io.smallrye.jdeparser.creator.ClassCreator;
+import io.smallrye.jdeparser.creator.ClassicSwitchCreator;
 import io.smallrye.jdeparser.creator.ForCreator;
 import io.smallrye.jdeparser.creator.InterfaceCreator;
 import io.smallrye.jdeparser.creator.LocalVarCreator;
@@ -307,7 +308,32 @@ public final class BlockCreatorImpl extends AbstractCreator implements BlockCrea
         checkActive();
         Assert.checkNotNullParam("selector", selector);
         Assert.checkNotNullParam("builder", builder);
+        version().require(LanguageFeature.SWITCH_ARROW_CASES);
         final SwitchCreatorImpl sc = new SwitchCreatorImpl(version());
+        sc.sourceFile(sourceFile());
+        nest(() -> builder.accept(sc));
+        sc.finish();
+        content.add(w -> {
+            w.write(Tokens.$KW.SWITCH);
+            w.write(FormatPreferences.Space.BEFORE_PAREN_SWITCH);
+            w.write(Tokens.$PAREN.OPEN);
+            w.write(FormatPreferences.Space.WITHIN_PAREN_SWITCH);
+            AbstractExpr.writeExpr(w, selector);
+            w.write(FormatPreferences.Space.WITHIN_PAREN_SWITCH);
+            w.write(Tokens.$PAREN.CLOSE);
+            w.write(FormatPreferences.Space.BEFORE_BRACE_SWITCH);
+            sc.writeBlock(w);
+            w.nl();
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void switchClassic(final Expr selector, final Consumer<ClassicSwitchCreator> builder) {
+        checkActive();
+        Assert.checkNotNullParam("selector", selector);
+        Assert.checkNotNullParam("builder", builder);
+        final ClassicSwitchCreatorImpl sc = new ClassicSwitchCreatorImpl(version());
         sc.sourceFile(sourceFile());
         nest(() -> builder.accept(sc));
         sc.finish();
@@ -555,13 +581,54 @@ public final class BlockCreatorImpl extends AbstractCreator implements BlockCrea
         checkActive();
         Assert.checkNotNullParam("value", value);
         version().require(LanguageFeature.SWITCH_EXPRESSIONS);
-        content.add(w -> {
-            w.write(Tokens.$KW.YIELD);
-            w.addWordSpace();
-            AbstractExpr.writeExpr(w, value);
-            w.write(Tokens.$PUNCT.SEMI);
-            w.nl();
-        });
+        content.add(new YieldWritable(value));
+    }
+
+    /**
+     * Returns the expression from a single {@code yield expr;} statement,
+     * if the block body consists of exactly that, or {@code null} otherwise.
+     * <p>
+     * This is used by {@link SwitchCreatorImpl} to determine whether an
+     * arrow-style case body can strip the {@code yield} keyword.
+     *
+     * @return the single yield expression, or {@code null}
+     */
+    Expr singleYieldExpr() {
+        return content.size() == 1
+                && content.get(0) instanceof YieldWritable y
+                        ? y.value()
+                        : null;
+    }
+
+    /**
+     * Returns the single content item if the block body consists of exactly
+     * one statement, or {@code null} otherwise.
+     * <p>
+     * This is used by {@link SwitchCreatorImpl} to determine whether an
+     * arrow-style case body can be rendered without braces.
+     *
+     * @return the single writable, or {@code null}
+     */
+    Writable singleStatement() {
+        return content.size() == 1 ? content.get(0) : null;
+    }
+
+    /**
+     * A writable representing a {@code yield} statement in a switch expression body.
+     *
+     * @param value the yield value expression (never {@code null})
+     */
+    record YieldWritable(Expr value) implements Writable {
+
+        /** {@inheritDoc} */
+        @Override
+        public void write(final SourceFileWriter writer) throws IOException {
+            writer.write(Tokens.$KW.YIELD);
+            writer.addWordSpace();
+            AbstractExpr.writeExpr(writer, value);
+            writer.write(Tokens.$PUNCT.SEMI);
+            writer.nl();
+        }
     }
 
     /** {@inheritDoc} */

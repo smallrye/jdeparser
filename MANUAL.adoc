@@ -1312,9 +1312,16 @@ is rendered in expression form by default (e.g., `x -> x * 2` instead of
 `x -> { return x * 2; }`). To force block form, enable the
 `LAMBDA_ALWAYS_BLOCK_BODY` formatting option.
 
+[[switch-expressions]]
 === Switch Expressions
 
-Switch expressions (Java 14+) are created from an expression:
+Switch expressions (Java 14+) are created from an expression using `Expr.switch_()`.
+They always use arrow (`\->`) syntax.
+When a case body consists of a single `yield` statement, the `yield` keyword
+is automatically stripped and the expression is rendered directly
+(e.g., `case X \-> expr;` instead of `case X \-> { yield expr; }`).
+
+See also <<switch-statements>> for switch used as a statement.
 
 //TEST:BEGIN
 //TEST:COMPILE-ONLY
@@ -4790,7 +4797,15 @@ public class ControlForEach {
 NOTE: The `forEach` method returns the loop variable so it can be used within the body.
 The variable is also accessible inside the callback via `Expr.$v("item")`.
 
+[[switch-statements]]
 === Switch Statements
+
+Modern switch statements (Java 14+) use arrow (`\->`) syntax with no fall-through.
+Single-statement case bodies are rendered without braces; multi-statement bodies
+are wrapped in braces automatically.
+For classic colon-style switch with fall-through, see <<classic-switch-statements>>.
+
+See also <<switch-expressions>> for switch used as an expression.
 
 ==== Constant Cases
 
@@ -4823,11 +4838,9 @@ public class ControlSwitchConstant {
                         body.switch_(Expr.$v("direction"), sw -> {
                             sw.case_(Expr.$v("NORTH"), cb -> {
                                 cb.emit(Expr.$v("y").inc());
-                                cb.break_();
                             });
                             sw.case_(Expr.$v("SOUTH"), cb -> {
                                 cb.emit(Expr.$v("y").dec());
-                                cb.break_();
                             });
                             sw.default_(cb -> {
                                 cb.throw_(Type.named("java.lang.IllegalArgumentException")
@@ -4892,6 +4905,58 @@ public class ControlSwitchMultiValue {
 ----
 //TEST:END
 
+==== Null Cases
+
+Use `Expr.NULL` to match `null` in a switch case:
+
+//TEST:BEGIN
+[source,java]
+----
+import java.io.IOException;
+import java.nio.file.Path;
+
+import io.smallrye.jdeparser.Expr;
+import io.smallrye.jdeparser.JDeparser;
+import io.smallrye.jdeparser.Sources;
+import io.smallrye.jdeparser.SourceVersion;
+import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.format.Filer;
+import io.smallrye.jdeparser.format.FormatPreferences;
+
+public class ControlSwitchNull {
+    public static void main(String[] args) throws IOException {
+        Filer filer = Filer.newInstance(Path.of("generated-sources"));
+        Sources sources = JDeparser.createSources(
+            filer, FormatPreferences.defaults(), SourceVersion.JAVA_17
+        );
+
+        sources.createSourceFile("com.example", "Example", sf -> {
+            sf.class_("Example", cc -> {
+                cc.method("example", mc -> {
+                    mc.returning(Type.STRING);
+                    mc.body(body -> {
+                        body.switch_(Expr.$v("input"), sw -> {
+                            sw.case_(Expr.NULL, cb -> {
+                                cb.return_(Expr.str("was null"));
+                            });
+                            sw.default_(cb -> {
+                                cb.return_(Expr.str("not null"));
+                            });
+                        });
+                    });
+                });
+            });
+        });
+
+        sources.writeSources();
+    }
+}
+----
+//TEST:END
+
+NOTE: Null cases are only supported in modern arrow-style switch.
+Classic switch (`switchClassic`) rejects `Expr.NULL`.
+
 ==== Type Pattern Cases (Java 21+)
 
 //TEST:BEGIN
@@ -4934,7 +4999,7 @@ public class ControlSwitchPattern {
                                         Expr.$v("r").call("height")));
                                 });
                             });
-                            sw.caseNull(cb -> {
+                            sw.case_(Expr.NULL, cb -> {
                                 cb.return_(Expr.ZERO);
                             });
                             sw.default_(cb -> {
@@ -4955,6 +5020,68 @@ public class ControlSwitchPattern {
 
 TIP: Type pattern cases use `CaseCreator`, which provides `when_(Expr)` for guard conditions
 and `body(Consumer<BlockCreator>)` for the case body.
+
+[[classic-switch-statements]]
+=== Classic Switch Statements
+
+Classic switch statements use colon (`:`) syntax with fall-through semantics.
+Use `switchClassic()` for this form.
+Classic switch does not support null cases, multi-value cases, or type pattern matching.
+
+//TEST:BEGIN
+[source,java]
+----
+import java.io.IOException;
+import java.nio.file.Path;
+
+import io.smallrye.jdeparser.Expr;
+import io.smallrye.jdeparser.JDeparser;
+import io.smallrye.jdeparser.Sources;
+import io.smallrye.jdeparser.SourceVersion;
+import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.format.Filer;
+import io.smallrye.jdeparser.format.FormatPreferences;
+
+public class ControlSwitchClassic {
+    public static void main(String[] args) throws IOException {
+        Filer filer = Filer.newInstance(Path.of("generated-sources"));
+        Sources sources = JDeparser.createSources(
+            filer, FormatPreferences.defaults(), SourceVersion.JAVA_17
+        );
+
+        sources.createSourceFile("com.example", "Example", sf -> {
+            sf.class_("Example", cc -> {
+                cc.method("example", mc -> {
+                    mc.returning(Type.VOID);
+                    mc.body(body -> {
+                        body.switchClassic(Expr.$v("direction"), sw -> {
+                            sw.case_(Expr.$v("NORTH"), cb -> {
+                                cb.emit(Expr.$v("y").inc());
+                                cb.break_();
+                            });
+                            sw.case_(Expr.$v("SOUTH"), cb -> {
+                                cb.emit(Expr.$v("y").dec());
+                                cb.break_();
+                            });
+                            sw.default_(cb -> {
+                                cb.throw_(Type.named("java.lang.IllegalArgumentException")
+                                    .new_(Expr.str("Unknown direction")));
+                            });
+                        });
+                    });
+                });
+            });
+        });
+
+        sources.writeSources();
+    }
+}
+----
+//TEST:END
+
+NOTE: Classic switch uses `ClassicSwitchCreator`, which only exposes `case_(Expr, body)` and
+`default_(body)`. For multi-value cases, null cases, or pattern matching, use the modern
+`switch_()` method instead.
 
 === Exception Handling
 
@@ -6128,6 +6255,7 @@ The library checks these automatically when you use a version-gated API.
 |Java 10 |`{@summary}` tag |`DOC_SUMMARY`
 |Java 12 |`{@systemProperty}` tag |`DOC_SYSTEM_PROPERTY`
 |Java 14 |Switch expressions |`SWITCH_EXPRESSIONS`
+|Java 14 |Arrow-style switch cases |`SWITCH_ARROW_CASES`
 |Java 15 |Text blocks |`TEXT_BLOCKS`
 |Java 16 |Records |`RECORDS`
 |Java 16 |`{@return}` inline tag |`DOC_RETURN_INLINE`
@@ -6395,6 +6523,7 @@ The `Opt` enum provides miscellaneous formatting flags:
 |`COMPACT_INIT_ONLY_CLASS` |on |Compact format for initializer-only classes
 |`SINGLE_STATEMENT_BRACES` |on |Braces around single-statement bodies
 |`LAMBDA_ALWAYS_BLOCK_BODY` |off |Force block form for single-return lambdas
+|`SWITCH_ARROW_ALWAYS_BLOCK_BODY` |off |Force block form for single-statement arrow switch cases
 |===
 
 //TEST:BEGIN
@@ -6985,7 +7114,8 @@ This chapter provides a tabular overview of every public type in the library, or
 |`FieldCreator` |Field: type, init, volatile, transient |<<fields>>
 |`BlockCreator` |Statement block: all control flow, variables, expressions |<<control-flow>>
 |`ForCreator` |Traditional for loop: init, condition, update, body |<<control-flow>>
-|`SwitchCreator` |Switch: constant, multi-value, type pattern, null, default cases |<<control-flow>>
+|`SwitchCreator` |Modern switch: constant, multi-value, type pattern, null, default arrow cases |<<control-flow>>
+|`ClassicSwitchCreator` |Classic switch: single-value constant cases with colon syntax |<<control-flow>>
 |`CaseCreator` |Type pattern case: guard condition, body |<<control-flow>>
 |`TryCreator` |Try: resources, body, catch, multi-catch, finally |<<control-flow>>
 |`LambdaCreator` |Lambda: params (typed/untyped), source version, block body |<<expressions>>

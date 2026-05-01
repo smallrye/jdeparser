@@ -4582,4 +4582,57 @@ class FormattingPreferencesTest extends AbstractGeneratingTestCase {
         int labelIndent = labelLine.indexOf("outer:");
         assertTrue(labelIndent > 8, "label should be further indented with LABELS=4");
     }
+
+    // ── SWITCH_ARROW_ALWAYS_BLOCK_BODY ──────────────────────────────────
+
+    /**
+     * Verifies that enabling {@link FormatPreferences.Opt#SWITCH_ARROW_ALWAYS_BLOCK_BODY}
+     * forces arrow case bodies to always render in block form, even for single statements.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void switchArrowAlwaysBlockBody() throws IOException {
+        // default: single-statement renders without braces
+        final Sources defaultSources = createSources(SourceVersion.JAVA_17);
+        defaultSources.createSourceFile("com.example", "Cls1", sf -> {
+            sf.class_("Cls1", cc -> {
+                cc.method("run", mc -> {
+                    mc.body(b -> {
+                        b.switch_(Expr.$v("x"), sc -> {
+                            sc.case_(Expr.ONE, body -> body.return_(Expr.str("one")));
+                            sc.default_(body -> body.return_(Expr.str("other")));
+                        });
+                    });
+                });
+            });
+        });
+        defaultSources.writeSources();
+        final String defaultOutput = getSource("com.example", "Cls1");
+        assertTrue(defaultOutput.contains("case 1 -> return"), "default: single-statement without braces");
+        assertFalse(defaultOutput.contains("case 1 -> {"), "default: no block braces");
+
+        clearSources();
+        // with option: always block
+        final FormatPreferences prefs = FormatPreferences.builder()
+                .addOption(FormatPreferences.Opt.SWITCH_ARROW_ALWAYS_BLOCK_BODY)
+                .build();
+        final Sources modifiedSources = createSources(prefs, SourceVersion.JAVA_17);
+        modifiedSources.createSourceFile("com.example", "Cls2", sf -> {
+            sf.class_("Cls2", cc -> {
+                cc.method("run", mc -> {
+                    mc.body(b -> {
+                        b.switch_(Expr.$v("x"), sc -> {
+                            sc.case_(Expr.ONE, body -> body.return_(Expr.str("one")));
+                            sc.default_(body -> body.return_(Expr.str("other")));
+                        });
+                    });
+                });
+            });
+        });
+        modifiedSources.writeSources();
+        final String modifiedOutput = getSource("com.example", "Cls2");
+        assertTrue(modifiedOutput.contains("case 1 -> {"), "modified: block braces forced");
+        assertTrue(modifiedOutput.contains("default -> {"), "modified: default block braces forced");
+    }
 }

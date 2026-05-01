@@ -369,6 +369,16 @@ public final class FormatPreferences {
          * rendered in block form ({@code params -> { return expr; }}).
          */
         LAMBDA_ALWAYS_BLOCK_BODY,
+        /**
+         * Always render arrow-style switch case bodies as block bodies,
+         * even when the body consists of a single statement.
+         * <p>
+         * When disabled (default), an arrow case whose body is exactly one
+         * statement is rendered without braces ({@code case X -> stmt;}).
+         * When enabled, such cases are always rendered in block form
+         * ({@code case X -> { stmt; }}).
+         */
+        SWITCH_ARROW_ALWAYS_BLOCK_BODY,
         ;
     }
 

@@ -297,7 +297,7 @@ class ComprehensiveExampleTest extends AbstractGeneratingTestCase {
                     mc.param("x", Type.INT);
                     mc.returning(Type.STRING);
                     mc.body(b -> {
-                        b.switch_(Expr.$v("x"), sw -> {
+                        b.switchClassic(Expr.$v("x"), sw -> {
                             sw.case_(Expr.ZERO, body -> {
                                 body.return_(Expr.str("zero"));
                             });

@@ -139,12 +139,32 @@ public sealed interface BlockCreator permits BlockCreatorImpl {
     Var forEach(Type type, String name, Expr iterable, Consumer<BlockCreator> body);
 
     /**
-     * Adds a {@code switch} statement.
+     * Adds a modern {@code switch} statement using arrow ({@code ->}) syntax
+     * with no fall-through (Java 14+).
+     * <p>
+     * Arrow cases support multi-value cases, type pattern matching (Java 21+),
+     * and {@code null} cases. For classic colon-style switch with fall-through,
+     * use {@link #switchClassic(Expr, Consumer)}.
      *
      * @param selector the switch selector expression
      * @param builder the callback to configure the switch cases
+     * @see #switchClassic(Expr, Consumer)
      */
     void switch_(Expr selector, Consumer<SwitchCreator> builder);
+
+    /**
+     * Adds a classic {@code switch} statement using colon ({@code :}) syntax
+     * with fall-through semantics.
+     * <p>
+     * Classic switch supports only single-value constant cases. It does not
+     * support {@code null} cases, multi-value cases, or type pattern matching.
+     * For those features, use {@link #switch_(Expr, Consumer)}.
+     *
+     * @param selector the switch selector expression
+     * @param builder the callback to configure the switch cases
+     * @see #switch_(Expr, Consumer)
+     */
+    void switchClassic(Expr selector, Consumer<ClassicSwitchCreator> builder);
 
     /**
      * Adds a {@code try} statement.

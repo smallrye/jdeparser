@@ -1,5 +1,6 @@
 package io.smallrye.jdeparser.test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -913,8 +914,10 @@ class ExpressionTest extends AbstractGeneratingTestCase {
         sources.writeSources();
         final String source = getSource("com.example", "SwitchExpr");
         assertTrue(source.contains("switch (x)"), "should contain switch expression selector");
-        assertTrue(source.contains("case 0:"), "should contain case label");
-        assertTrue(source.contains("yield \"zero\""), "should contain yield statement");
+        assertTrue(source.contains("case 0 ->"), "should contain arrow case label");
+        assertFalse(source.contains("case 0:"), "should not contain colon case label");
+        assertTrue(source.contains("\"zero\""), "should contain yield expression value");
+        assertFalse(source.contains("yield"), "single-yield should be stripped in arrow form");
     }
 
     // ---- Lambda expression coverage ----

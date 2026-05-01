@@ -152,7 +152,7 @@ public final class MethodCreatorImpl extends AbstractCreator implements MethodCr
 
     /** {@inheritDoc} */
     @Override
-    public void typeParam(final String name, final Consumer<TypeParamCreator> builder) {
+    public Type typeParam(final String name, final Consumer<TypeParamCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
@@ -165,6 +165,7 @@ public final class MethodCreatorImpl extends AbstractCreator implements MethodCr
         if (tp.docComment() != null) {
             getOrCreateDocComment().addTypeParamTag(name, tp.docComment());
         }
+        return new ReferenceType(name);
     }
 
     /** {@inheritDoc} */

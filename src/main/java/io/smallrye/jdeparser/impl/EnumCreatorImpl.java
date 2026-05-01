@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.creator.AccessLevel;
 import io.smallrye.jdeparser.creator.AnnotationCreator;
 import io.smallrye.jdeparser.creator.ConstructorCreator;
@@ -93,7 +94,7 @@ public final class EnumCreatorImpl extends AbstractCreator implements EnumCreato
 
     /** {@inheritDoc} */
     @Override
-    public void field(final String name, final Consumer<FieldCreator> builder) {
+    public Var field(final String name, final Consumer<FieldCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
@@ -103,6 +104,7 @@ public final class EnumCreatorImpl extends AbstractCreator implements EnumCreato
         nest(() -> builder.accept(fc));
         fc.finish();
         members.add(fc);
+        return new NamedVar(name);
     }
 
     /** {@inheritDoc} */

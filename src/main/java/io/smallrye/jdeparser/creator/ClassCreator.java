@@ -3,6 +3,7 @@ package io.smallrye.jdeparser.creator;
 import java.util.function.Consumer;
 
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.impl.ClassCreatorImpl;
 
 /**
@@ -39,16 +40,18 @@ public sealed interface ClassCreator extends ModifiableCreator permits ClassCrea
      *
      * @param name the type parameter name (e.g., {@code "T"})
      * @param builder the callback to configure the type parameter
+     * @return a type reference for the declared type parameter
      */
-    void typeParam(String name, Consumer<TypeParamCreator> builder);
+    Type typeParam(String name, Consumer<TypeParamCreator> builder);
 
     /**
      * Defines a field in this class.
      *
      * @param name the field name
      * @param builder the callback to configure the field
+     * @return a variable expression referencing the declared field
      */
-    void field(String name, Consumer<FieldCreator> builder);
+    Var field(String name, Consumer<FieldCreator> builder);
 
     /**
      * Defines a method in this class.

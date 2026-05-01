@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.creator.AccessLevel;
 import io.smallrye.jdeparser.creator.AnnotationCreator;
 import io.smallrye.jdeparser.creator.BlockCreator;
@@ -83,7 +84,7 @@ public final class RecordCreatorImpl extends AbstractCreator implements RecordCr
 
     /** {@inheritDoc} */
     @Override
-    public void typeParam(final String name, final Consumer<TypeParamCreator> builder) {
+    public Type typeParam(final String name, final Consumer<TypeParamCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
@@ -96,6 +97,7 @@ public final class RecordCreatorImpl extends AbstractCreator implements RecordCr
         if (tp.docComment() != null) {
             getOrCreateDocComment().addTypeParamTag(name, tp.docComment());
         }
+        return new ReferenceType(name);
     }
 
     /** {@inheritDoc} */
@@ -161,7 +163,7 @@ public final class RecordCreatorImpl extends AbstractCreator implements RecordCr
 
     /** {@inheritDoc} */
     @Override
-    public void field(final String name, final Consumer<FieldCreator> builder) {
+    public Var field(final String name, final Consumer<FieldCreator> builder) {
         checkActive();
         Assert.checkNotNullParam("name", name);
         Assert.checkNotEmptyParam("name", name);
@@ -171,6 +173,7 @@ public final class RecordCreatorImpl extends AbstractCreator implements RecordCr
         nest(() -> builder.accept(fc));
         fc.finish();
         members.add(fc);
+        return new NamedVar(name);
     }
 
     /** {@inheritDoc} */

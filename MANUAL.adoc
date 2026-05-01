@@ -64,6 +64,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -86,7 +87,7 @@ public class QuickStart {
                 cc.final_();
 
                 // Field: private final String name;
-                cc.field("name", fc -> { // <3>
+                Var nameField = cc.field("name", fc -> { // <3>
                     fc.private_();
                     fc.final_();
                     fc.type(Type.STRING);
@@ -95,10 +96,10 @@ public class QuickStart {
                 // Constructor: public Person(String name) { this.name = name; }
                 cc.constructor(con -> { // <4>
                     con.public_();
-                    con.param("name", Type.STRING);
+                    Var name = con.param("name", Type.STRING);
                     con.body(body -> {
                         body.emit(
-                            Expr.THIS.field("name").assign(Expr.$v("name"))
+                            Expr.THIS.field("name").assign(name)
                         );
                     });
                 });
@@ -108,7 +109,7 @@ public class QuickStart {
                     mc.public_();
                     mc.returning(Type.STRING);
                     mc.body(body -> {
-                        body.return_(Expr.$v("name"));
+                        body.return_(nameField);
                     });
                 });
             });
@@ -1413,14 +1414,11 @@ public class ExpressionsExample {
                     mc.public_();
                     mc.static_();
                     mc.returning(Type.INT);
-                    mc.param("value", Type.INT);
-                    mc.param("min", Type.INT);
-                    mc.param("max", Type.INT);
+                    Var value = mc.param("value", Type.INT);
+                    Var min = mc.param("min", Type.INT);
+                    Var max = mc.param("max", Type.INT);
                     mc.body(body -> {
                         // return value < min ? min : value > max ? max : value;
-                        Var value = Expr.$v("value");
-                        Var min = Expr.$v("min");
-                        Var max = Expr.$v("max");
                         body.return_(
                             value.lt(min).cond(min,
                                 value.gt(max).cond(max, value))
@@ -1433,10 +1431,9 @@ public class ExpressionsExample {
                     mc.public_();
                     mc.static_();
                     mc.returning(Type.BOOLEAN);
-                    mc.param("n", Type.INT);
+                    Var n = mc.param("n", Type.INT);
                     mc.body(body -> {
                         // return n > 0 && (n & (n - 1)) == 0;
-                        Var n = Expr.$v("n");
                         body.return_(
                             n.gt(Expr.ZERO).and(
                                 n.bitAnd(n.sub(Expr.ONE).paren())
@@ -1610,6 +1607,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -1640,11 +1638,11 @@ public class SourceFileExample {
                     mc.public_();
                     mc.static_();
                     mc.returning(Type.BOOLEAN);
-                    mc.param("s", Type.STRING);
+                    Var s = mc.param("s", Type.STRING);
                     mc.body(body -> {
                         body.return_(
-                            Expr.$v("s").eq(Expr.NULL).or(
-                                Expr.$v("s").call("isBlank"))
+                            s.eq(Expr.NULL).or(
+                                s.call("isBlank"))
                         );
                     });
                 });
@@ -1834,6 +1832,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -1848,7 +1847,7 @@ public class ClassMembers {
             sf.class_("Account", cc -> {
                 cc.public_();
 
-                cc.field("balance", fc -> {
+                Var balanceField = cc.field("balance", fc -> {
                     fc.private_();
                     fc.type(Type.DOUBLE);
                     fc.init(Expr.decimal(0.0));
@@ -1856,10 +1855,10 @@ public class ClassMembers {
 
                 cc.constructor(con -> {
                     con.public_();
-                    con.param("initialBalance", Type.DOUBLE);
+                    Var initialBalance = con.param("initialBalance", Type.DOUBLE);
                     con.body(body -> {
                         body.emit(Expr.THIS.field("balance")
-                            .assign(Expr.$v("initialBalance")));
+                            .assign(initialBalance));
                     });
                 });
 
@@ -1867,7 +1866,7 @@ public class ClassMembers {
                     mc.public_();
                     mc.returning(Type.DOUBLE);
                     mc.body(body -> {
-                        body.return_(Expr.$v("balance"));
+                        body.return_(balanceField);
                     });
                 });
             });
@@ -1892,6 +1891,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -1906,7 +1906,7 @@ public class ClassInitializers {
             sf.class_("Registry", cc -> {
                 cc.public_();
 
-                cc.field("entries", fc -> {
+                Var entries = cc.field("entries", fc -> {
                     fc.private_();
                     fc.static_();
                     fc.final_();
@@ -1915,7 +1915,7 @@ public class ClassInitializers {
 
                 // static { entries = new HashMap<>(); }
                 cc.staticInit(body -> {
-                    body.emit(Expr.$v("entries").assign(
+                    body.emit(entries.assign(
                         Type.named("java.util.HashMap").new_()));
                 });
 
@@ -2025,7 +2025,7 @@ public class ClassExample {
                 cc.typeParam("T", tp -> {});
 
                 // private final List<String> messages = new ArrayList<>();
-                cc.field("messages", fc -> {
+                Var messages = cc.field("messages", fc -> {
                     fc.private_();
                     fc.final_();
                     fc.type(stringListType);
@@ -2036,10 +2036,10 @@ public class ClassExample {
                 cc.method("add", mc -> {
                     mc.public_();
                     mc.returning(Type.VOID);
-                    mc.param("message", Type.STRING);
+                    Var message = mc.param("message", Type.STRING);
                     mc.body(body -> {
-                        body.emit(Expr.$v("messages").call("add",
-                            Expr.$v("message")));
+                        body.emit(messages.call("add",
+                            message));
                     });
                 });
 
@@ -2050,7 +2050,7 @@ public class ClassExample {
                     mc.body(body -> {
                         body.return_(
                             Type.named("java.util.Collections")
-                                .call("unmodifiableList", Expr.$v("messages"))
+                                .call("unmodifiableList", messages)
                         );
                     });
                 });
@@ -2102,11 +2102,11 @@ public class InterfaceBasic {
         sources.createSourceFile("com.example", "Identifiable", sf -> {
             sf.interface_("Identifiable", ifc -> {
                 ifc.public_();
-                ifc.typeParam("ID", tp -> {});
+                Type id = ifc.typeParam("ID", tp -> {});
 
                 // ID getId();
                 ifc.method("getId", mc -> {
-                    mc.returning(Type.named("ID"));
+                    mc.returning(id);
                 });
             });
         });
@@ -2201,10 +2201,10 @@ public class InterfaceStaticPrivate {
                 ifc.method("validate", mc -> {
                     mc.static_();
                     mc.returning(Type.VOID);
-                    mc.typeParam("T", tp -> {
+                    Type t = mc.typeParam("T", tp -> {
                         tp.extends_(Type.named("com.example.Validatable"));
                     });
-                    mc.param("obj", Type.named("T"));
+                    mc.param("obj", t);
                     mc.body(body -> {
                     });
                 });
@@ -2322,6 +2322,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.creator.ModifierFlag;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
@@ -2342,35 +2343,35 @@ public class InterfaceExample {
             sf.interface_("Repository", ifc -> {
                 ifc.public_();
                 ifc.sealed_();
-                ifc.typeParam("T", tp -> {});
-                ifc.typeParam("ID", tp -> {});
+                Type t = ifc.typeParam("T", tp -> {});
+                Type idType = ifc.typeParam("ID", tp -> {});
                 ifc.permits(Type.named("com.example.AbstractRepository"));
 
                 // Optional<T> findById(ID id);
                 ifc.method("findById", mc -> {
                     mc.returning(Type.named("java.util.Optional")
-                        .typeArg(Type.named("T")));
-                    mc.param("id", Type.named("ID"));
+                        .typeArg(t));
+                    mc.param("id", idType);
                 });
 
                 // List<T> findAll();
                 ifc.method("findAll", mc -> {
-                    mc.returning(listType.typeArg(Type.named("T")));
+                    mc.returning(listType.typeArg(t));
                 });
 
                 // T save(T entity);
                 ifc.method("save", mc -> {
-                    mc.returning(Type.named("T"));
-                    mc.param("entity", Type.named("T"));
+                    mc.returning(t);
+                    mc.param("entity", t);
                 });
 
                 // default void deleteById(ID id) { ... }
                 ifc.method("deleteById", mc -> {
                     mc.addFlag(ModifierFlag.DEFAULT);
                     mc.returning(Type.VOID);
-                    mc.param("id", Type.named("ID"));
+                    Var id = mc.param("id", idType);
                     mc.body(body -> {
-                        body.emit(Expr.callPlain("findById", Expr.$v("id"))
+                        body.emit(Expr.callPlain("findById", id)
                             .call("ifPresent",
                                 Expr.lambda("e",
                                     Expr.callPlain("delete", Expr.$v("e")))));
@@ -2380,21 +2381,21 @@ public class InterfaceExample {
                 // void delete(T entity);
                 ifc.method("delete", mc -> {
                     mc.returning(Type.VOID);
-                    mc.param("entity", Type.named("T"));
+                    mc.param("entity", t);
                 });
 
                 // Nested listener interface
                 ifc.interface_("ChangeListener", inner -> {
-                    inner.typeParam("E", tp -> {});
+                    Type e = inner.typeParam("E", tp -> {});
 
                     inner.method("onSave", mc -> {
                         mc.returning(Type.VOID);
-                        mc.param("entity", Type.named("E"));
+                        mc.param("entity", e);
                     });
 
                     inner.method("onDelete", mc -> {
                         mc.returning(Type.VOID);
-                        mc.param("entity", Type.named("E"));
+                        mc.param("entity", e);
                     });
                 });
             });
@@ -2463,6 +2464,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -2498,11 +2500,11 @@ public class EnumWithArgs {
                 });
 
                 ec.constructor(con -> {
-                    con.param("mass", Type.DOUBLE);
-                    con.param("radius", Type.DOUBLE);
+                    Var mass = con.param("mass", Type.DOUBLE);
+                    Var radius = con.param("radius", Type.DOUBLE);
                     con.body(body -> {
-                        body.emit(Expr.THIS.field("mass").assign(Expr.$v("mass")));
-                        body.emit(Expr.THIS.field("radius").assign(Expr.$v("radius")));
+                        body.emit(Expr.THIS.field("mass").assign(mass));
+                        body.emit(Expr.THIS.field("radius").assign(radius));
                     });
                 });
             });
@@ -2529,6 +2531,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -2549,10 +2552,10 @@ public class EnumWithBodies {
                         classBc.method("apply", mc -> {
                             mc.public_();
                             mc.returning(Type.DOUBLE);
-                            mc.param("a", Type.DOUBLE);
-                            mc.param("b", Type.DOUBLE);
+                            Var a = mc.param("a", Type.DOUBLE);
+                            Var b = mc.param("b", Type.DOUBLE);
                             mc.body(body -> {
-                                body.return_(Expr.$v("a").add(Expr.$v("b")));
+                                body.return_(a.add(b));
                             });
                         });
                     });
@@ -2564,25 +2567,25 @@ public class EnumWithBodies {
                         classBc.method("apply", mc -> {
                             mc.public_();
                             mc.returning(Type.DOUBLE);
-                            mc.param("a", Type.DOUBLE);
-                            mc.param("b", Type.DOUBLE);
+                            Var a = mc.param("a", Type.DOUBLE);
+                            Var b = mc.param("b", Type.DOUBLE);
                             mc.body(body -> {
-                                body.return_(Expr.$v("a").sub(Expr.$v("b")));
+                                body.return_(a.sub(b));
                             });
                         });
                     });
                 });
 
-                ec.field("symbol", fc -> {
+                Var symbolField = ec.field("symbol", fc -> {
                     fc.private_();
                     fc.final_();
                     fc.type(Type.STRING);
                 });
 
                 ec.constructor(con -> {
-                    con.param("symbol", Type.STRING);
+                    Var symbol = con.param("symbol", Type.STRING);
                     con.body(body -> {
-                        body.emit(Expr.THIS.field("symbol").assign(Expr.$v("symbol")));
+                        body.emit(Expr.THIS.field("symbol").assign(symbol));
                     });
                 });
 
@@ -2598,7 +2601,7 @@ public class EnumWithBodies {
                     mc.public_();
                     mc.returning(Type.STRING);
                     mc.body(body -> {
-                        body.return_(Expr.$v("symbol"));
+                        body.return_(symbolField);
                     });
                 });
             });
@@ -2733,10 +2736,10 @@ public class RecordGeneric {
         sources.createSourceFile("com.example", "Pair", sf -> {
             sf.record_("Pair", rc -> {
                 rc.public_();
-                rc.typeParam("A", tp -> {});
-                rc.typeParam("B", tp -> {});
-                rc.component("first", Type.named("A"));
-                rc.component("second", Type.named("B"));
+                Type a = rc.typeParam("A", tp -> {});
+                Type b = rc.typeParam("B", tp -> {});
+                rc.component("first", a);
+                rc.component("second", b);
             });
         });
 
@@ -2759,6 +2762,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -2791,11 +2795,11 @@ public class RecordWithMethods {
                 rc.method("contains", mc -> {
                     mc.public_();
                     mc.returning(Type.BOOLEAN);
-                    mc.param("value", Type.named("T"));
+                    Var value = mc.param("value", Type.named("T"));
                     mc.body(body -> {
                         body.return_(
-                            Expr.$v("start").call("compareTo", Expr.$v("value")).le(Expr.ZERO)
-                                .and(Expr.$v("end").call("compareTo", Expr.$v("value")).ge(Expr.ZERO))
+                            Expr.$v("start").call("compareTo", value).le(Expr.ZERO)
+                                .and(Expr.$v("end").call("compareTo", value).ge(Expr.ZERO))
                         );
                     });
                 });
@@ -2803,11 +2807,11 @@ public class RecordWithMethods {
                 rc.method("compareTo", mc -> {
                     mc.public_();
                     mc.returning(Type.INT);
-                    mc.param("other", Type.named("com.example.Interval").typeArg(Type.named("T")));
+                    Var other = mc.param("other", Type.named("com.example.Interval").typeArg(Type.named("T")));
                     mc.body(body -> {
                         body.return_(
                             Expr.$v("start").call("compareTo",
-                                Expr.$v("other").call("start"))
+                                other.call("start"))
                         );
                     });
                 });
@@ -3090,6 +3094,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -3105,9 +3110,10 @@ public class MethodSignature {
                 cc.method("process", mc -> {
                     mc.public_();
                     mc.returning(Type.VOID);
-                    mc.param("input", Type.STRING);
-                    mc.param("count", Type.INT);
+                    Var input = mc.param("input", Type.STRING);
+                    Var count = mc.param("count", Type.INT);
                     mc.body(body -> {
+                        // we can use `input` and `count` directly now
                     });
                 });
             });
@@ -3241,6 +3247,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -3257,11 +3264,11 @@ public class MethodVarargs {
                     mc.public_();
                     mc.static_();
                     mc.returning(Type.STRING);
-                    mc.param("pattern", Type.STRING);
-                    mc.varargParam("args", Type.OBJECT, pc -> {});
+                    Var pattern = mc.param("pattern", Type.STRING);
+                    Var fmtArgs = mc.varargParam("args", Type.OBJECT, pc -> {});
                     mc.body(body -> {
                         body.return_(Type.STRING.call("format",
-                            Expr.$v("pattern"), Expr.$v("args")));
+                            pattern, fmtArgs));
                     });
                 });
             });
@@ -3330,6 +3337,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -3344,18 +3352,18 @@ public class MethodGeneric {
             sf.class_("Example", cc -> {
                 cc.method("convert", mc -> {
                     mc.public_();
-                    mc.typeParam("T", tp -> {});
-                    mc.typeParam("R", tp -> {
+                    Type t = mc.typeParam("T", tp -> {});
+                    Type r = mc.typeParam("R", tp -> {
                         tp.extends_(Type.named("java.io.Serializable"));
                     });
-                    mc.returning(Type.named("R"));
-                    mc.param("input", Type.named("T"));
-                    mc.param("converter",
+                    mc.returning(r);
+                    Var input = mc.param("input", t);
+                    Var converter = mc.param("converter",
                         Type.named("java.util.function.Function")
-                            .typeArg(Type.named("T"), Type.named("R")));
+                            .typeArg(t, r));
                     mc.body(body -> {
-                        body.return_(Expr.$v("converter").call("apply",
-                            Expr.$v("input")));
+                        body.return_(converter.call("apply",
+                            input));
                     });
                 });
             });
@@ -3431,6 +3439,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -3445,11 +3454,11 @@ public class ConstructorBasic {
             sf.class_("Example", cc -> {
                 cc.constructor(con -> {
                     con.public_();
-                    con.param("name", Type.STRING);
-                    con.param("age", Type.INT);
+                    Var name = con.param("name", Type.STRING);
+                    Var age = con.param("age", Type.INT);
                     con.body(body -> {
-                        body.emit(Expr.THIS.field("name").assign(Expr.$v("name")));
-                        body.emit(Expr.THIS.field("age").assign(Expr.$v("age")));
+                        body.emit(Expr.THIS.field("name").assign(name));
+                        body.emit(Expr.THIS.field("age").assign(age));
                     });
                 });
             });
@@ -3476,6 +3485,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -3499,11 +3509,11 @@ public class ConstructorDelegation {
                 // Parameterized constructor delegates to super
                 cc.constructor(con -> {
                     con.public_();
-                    con.param("name", Type.STRING);
-                    con.param("id", Type.INT);
+                    Var name = con.param("name", Type.STRING);
+                    Var id = con.param("id", Type.INT);
                     con.body(body -> {
-                        body.callSuper(Expr.$v("name"));
-                        body.emit(Expr.THIS.field("id").assign(Expr.$v("id")));
+                        body.callSuper(name);
+                        body.emit(Expr.THIS.field("id").assign(id));
                     });
                 });
             });
@@ -3528,6 +3538,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -3560,33 +3571,33 @@ public class MethodsExample {
                 // Primary constructor
                 cc.constructor(con -> {
                     con.public_();
-                    con.param("baseUrl", Type.STRING);
-                    con.param("timeout", Type.INT);
+                    Var baseUrl = con.param("baseUrl", Type.STRING);
+                    Var timeout = con.param("timeout", Type.INT);
                     con.body(body -> {
                         body.emit(Expr.THIS.field("baseUrl")
-                            .assign(Expr.$v("baseUrl")));
+                            .assign(baseUrl));
                         body.emit(Expr.THIS.field("timeout")
-                            .assign(Expr.$v("timeout")));
+                            .assign(timeout));
                     });
                 });
 
                 // Delegating constructor
                 cc.constructor(con -> {
                     con.public_();
-                    con.param("baseUrl", Type.STRING);
+                    Var baseUrl = con.param("baseUrl", Type.STRING);
                     con.body(body -> {
-                        body.callThis(Expr.$v("baseUrl"), Expr.decimal(30000));
+                        body.callThis(baseUrl, Expr.decimal(30000));
                     });
                 });
 
                 // Generic method with exception
                 cc.method("get", mc -> {
                     mc.public_();
-                    mc.typeParam("T", tp -> {});
-                    mc.returning(Type.named("T"));
+                    Type t = mc.typeParam("T", tp -> {});
+                    mc.returning(t);
                     mc.param("path", Type.STRING);
                     mc.param("responseType", Type.named("java.lang.Class")
-                        .typeArg(Type.named("T")));
+                        .typeArg(t));
                     mc.throws_(Type.named("java.io.IOException"));
                     mc.body(body -> {
                         body.throw_(Type.named("java.lang.UnsupportedOperationException")
@@ -3598,10 +3609,10 @@ public class MethodsExample {
                 cc.method("buildUrl", mc -> {
                     mc.private_();
                     mc.returning(Type.STRING);
-                    mc.param("base", Type.STRING);
+                    Var base = mc.param("base", Type.STRING);
                     mc.varargParam("segments", Type.STRING, pc -> {});
                     mc.body(body -> {
-                        body.return_(Expr.$v("base"));
+                        body.return_(base);
                     });
                 });
             });
@@ -3972,7 +3983,7 @@ The `ModifierFlag` enum provides non-access modifiers:
 |`DEFAULT` |`default`
 |`SEALED` |`sealed`
 |`NON_SEALED` |`non-sealed`
-|`VARARGS` |`...` _(internal use)_
+|`VARARGS` |`...`
 |===
 
 Convenience methods:
@@ -5402,6 +5413,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -5423,10 +5435,10 @@ public class ControlConstructorDelegation {
 
                 // super(arg1)
                 cc.constructor(con -> {
-                    con.param("name", Type.STRING);
+                    Var name = con.param("name", Type.STRING);
                     con.param("id", Type.INT);
                     con.body(body -> {
-                        body.callSuper(Expr.$v("name"));
+                        body.callSuper(name);
                     });
                 });
             });
@@ -5680,6 +5692,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -5701,7 +5714,7 @@ public class JavadocBlockTags {
                 cc.method("process", mc -> {
                     mc.public_();
                     mc.returning(Type.STRING);
-                    mc.param("input", Type.STRING);
+                    Var input = mc.param("input", Type.STRING);
                     mc.throws_(Type.named("java.io.IOException"));
                     mc.docComment(doc -> {
                         doc.text("Processes the input data and returns the result.");
@@ -5723,7 +5736,7 @@ public class JavadocBlockTags {
                         doc.deprecated("Use {@link #processV2(String)} instead.");
                     });
                     mc.body(body -> {
-                        body.return_(Expr.$v("input"));
+                        body.return_(input);
                     });
                 });
             });
@@ -5950,6 +5963,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -5994,11 +6008,11 @@ public class JavadocExample {
 
                 cc.method("process", mc -> {
                     mc.public_();
-                    mc.typeParam("T", tp -> {
+                    Type t = mc.typeParam("T", tp -> {
                         tp.docComment(doc -> doc.text("the record type"));
                     });
-                    mc.returning(listType.typeArg(Type.named("T")));
-                    mc.param("records", listType.typeArg(Type.named("T")), pc -> {
+                    mc.returning(listType.typeArg(t));
+                    Var records = mc.param("records", listType.typeArg(t), pc -> {
                         pc.docComment(doc -> {
                             doc.text("the records to process (must not be ");
                             doc.code("null");
@@ -6020,7 +6034,7 @@ public class JavadocExample {
                     });
 
                     mc.body(body -> {
-                        body.return_(Expr.$v("records"));
+                        body.return_(records);
                     });
                 });
             });
@@ -6144,6 +6158,7 @@ import io.smallrye.jdeparser.LanguageFeature;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -6159,13 +6174,13 @@ public class VersionExample {
             sf.class_("Config", cc -> {
                 cc.public_();
 
-                cc.field("name", fc -> {
+                Var nameField = cc.field("name", fc -> {
                     fc.private_();
                     fc.final_();
                     fc.type(Type.STRING);
                 });
 
-                cc.field("value", fc -> {
+                Var valueField = cc.field("value", fc -> {
                     fc.private_();
                     fc.final_();
                     fc.type(Type.STRING);
@@ -6173,13 +6188,13 @@ public class VersionExample {
 
                 cc.constructor(con -> {
                     con.public_();
-                    con.param("name", Type.STRING);
-                    con.param("value", Type.STRING);
+                    Var name = con.param("name", Type.STRING);
+                    Var value = con.param("value", Type.STRING);
                     con.body(body -> {
                         body.emit(Expr.THIS.field("name")
-                            .assign(Expr.$v("name")));
+                            .assign(name));
                         body.emit(Expr.THIS.field("value")
-                            .assign(Expr.$v("value")));
+                            .assign(value));
                     });
                 });
 
@@ -6191,14 +6206,14 @@ public class VersionExample {
                             // Use text blocks for Java 15+
                             body.return_(Expr.str("Config:\n  name=%s\n  value=%s")
                                 .call("formatted",
-                                    Expr.$v("name"), Expr.$v("value")));
+                                    nameField, valueField));
                         } else {
                             // Fall back to concatenation for older versions
                             body.return_(
                                 Expr.str("Config: name=")
-                                    .add(Expr.$v("name"))
+                                    .add(nameField)
                                     .add(Expr.str(", value="))
-                                    .add(Expr.$v("value")));
+                                    .add(valueField));
                         }
                     });
                 });
@@ -6467,6 +6482,7 @@ import io.smallrye.jdeparser.JDeparser;
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.format.Filer;
 import io.smallrye.jdeparser.format.FormatPreferences;
 
@@ -6496,17 +6512,17 @@ public class FormattingExample {
             sf.class_("StyledClass", cc -> {
                 cc.public_();
 
-                cc.field("value", fc -> {
+                Var valueField = cc.field("value", fc -> {
                     fc.private_();
                     fc.type(Type.INT);
                 });
 
                 cc.constructor(con -> {
                     con.public_();
-                    con.param("value", Type.INT);
+                    Var value = con.param("value", Type.INT);
                     con.body(body -> {
                         body.emit(Expr.THIS.field("value")
-                            .assign(Expr.$v("value")));
+                            .assign(value));
                     });
                 });
 
@@ -6514,7 +6530,7 @@ public class FormattingExample {
                     mc.public_();
                     mc.returning(Type.INT);
                     mc.body(body -> {
-                        body.return_(Expr.$v("value"));
+                        body.return_(valueField);
                     });
                 });
             });

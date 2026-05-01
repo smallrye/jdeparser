@@ -125,9 +125,10 @@ public sealed interface Type permits AbstractType {
     }
 
     /**
-     * Creates a type from a fully qualified class name string.
+     * Creates a type from a fully qualified class name string or type variable name.
      *
      * @param qualifiedName the fully qualified class name (e.g., {@code "com.example.MyClass"})
+     *        or type variable name (e.g., {@code "T"}) (must not be {@code null} or empty)
      * @return the corresponding type
      */
     static Type named(final String qualifiedName) {

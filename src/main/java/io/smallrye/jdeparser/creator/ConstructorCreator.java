@@ -54,8 +54,9 @@ public sealed interface ConstructorCreator extends ModifiableCreator permits Con
      *
      * @param name the type parameter name
      * @param builder the callback to configure the type parameter
+     * @return a type reference for the declared type parameter
      */
-    void typeParam(String name, Consumer<TypeParamCreator> builder);
+    Type typeParam(String name, Consumer<TypeParamCreator> builder);
 
     /**
      * Defines the constructor body.

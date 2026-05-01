@@ -1,5 +1,5 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.smallrye.jdeparser/jdeparser?color=green)](https://search.maven.org/search?q=a:jdeparser)
-[![License](https://img.shields.io/github/license/smallrye/jdeparser.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![License](https://img.shields.io/github/license/smallrye/jdeparser)](http://www.apache.org/licenses/LICENSE-2.0)
 
 # SmallRye JDeparser
 

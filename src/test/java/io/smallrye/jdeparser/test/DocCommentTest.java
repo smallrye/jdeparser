@@ -1481,4 +1481,312 @@ class DocCommentTest extends AbstractGeneratingTestCase {
             });
         });
     }
+
+    // ---- Tests for co-located returning/throws documentation ----
+
+    /**
+     * Verifies that the {@code returning(Type, Consumer)} overload generates
+     * a {@code @return} block tag in the method's Javadoc.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void returningWithDoc() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "ReturningDoc", sf -> {
+            sf.class_("ReturningDoc", cc -> {
+                cc.public_();
+                cc.method("getValue", mc -> {
+                    mc.public_();
+                    mc.returning(Type.INT, dc -> dc.text("the computed value"));
+                    mc.body(b -> {
+                        b.return_(Expr.ZERO);
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ReturningDoc");
+        assertTrue(source.contains("@return"), "should contain @return tag");
+        assertTrue(source.contains("the computed value"), "should contain return description");
+    }
+
+    /**
+     * Verifies that the {@code returningInline(Type, Consumer)} overload generates
+     * an inline {@code {@return ...}} tag in the method's Javadoc.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void returningInlineWithDoc() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "ReturningInlineDoc", sf -> {
+            sf.class_("ReturningInlineDoc", cc -> {
+                cc.public_();
+                cc.method("getName", mc -> {
+                    mc.public_();
+                    mc.returningInline(Type.STRING, dc -> dc.text("the name"));
+                    mc.body(b -> {
+                        b.return_(Expr.str(""));
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ReturningInlineDoc");
+        assertTrue(source.contains("{@return the name}"), "should contain inline {@return} tag");
+    }
+
+    /**
+     * Verifies that the {@code returningInline} overload requires Java 16+.
+     */
+    @Test
+    void returningInlineDocRejectedBeforeJava16() {
+        final Sources sources = createSources(SourceVersion.JAVA_15);
+        assertThrows(IllegalStateException.class, () -> {
+            sources.createSourceFile("com.example", "ReturningInlineBad", sf -> {
+                sf.class_("ReturningInlineBad", cc -> {
+                    cc.public_();
+                    cc.method("foo", mc -> {
+                        mc.public_();
+                        mc.returningInline(Type.INT, dc -> dc.text("the value"));
+                        mc.body(b -> {
+                            b.return_(Expr.ZERO);
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /**
+     * Verifies that the {@code throws_(Type, Consumer)} overload generates
+     * a {@code @throws} block tag in the method's Javadoc.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void throwsWithDoc() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        final Type ioException = Type.named("java.io.IOException");
+        sources.createSourceFile("com.example", "ThrowsWithDoc", sf -> {
+            sf.class_("ThrowsWithDoc", cc -> {
+                cc.public_();
+                cc.method("readFile", mc -> {
+                    mc.public_();
+                    mc.throws_(ioException, dc -> dc.text("if I/O fails"));
+                    mc.body(b -> {
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ThrowsWithDoc");
+        assertTrue(source.contains("@throws java.io.IOException"), "should contain @throws tag with type");
+        assertTrue(source.contains("if I/O fails"), "should contain throws description");
+        assertTrue(source.contains("throws java.io.IOException"),
+                "should contain throws clause in method signature");
+    }
+
+    /**
+     * Verifies that the {@code throws_(Type, Consumer)} overload on a constructor
+     * generates a {@code @throws} block tag in the constructor's Javadoc.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void constructorThrowsWithDoc() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        final Type illegalArg = Type.named("java.lang.IllegalArgumentException");
+        sources.createSourceFile("com.example", "CtorThrowsDoc", sf -> {
+            sf.class_("CtorThrowsDoc", cc -> {
+                cc.public_();
+                cc.constructor(ctor -> {
+                    ctor.public_();
+                    ctor.param("name", Type.STRING);
+                    ctor.throws_(illegalArg, dc -> dc.text("if name is null"));
+                    ctor.body(b -> {
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "CtorThrowsDoc");
+        assertTrue(source.contains("@throws IllegalArgumentException"),
+                "should contain @throws tag with resolved type");
+        assertTrue(source.contains("if name is null"), "should contain throws description");
+    }
+
+    /**
+     * Verifies that the {@code returning} doc overload supports rich inline content
+     * including {@code {@code}} and {@code {@link}} tags.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void returningDocWithRichContent() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "ReturningRich", sf -> {
+            sf.class_("ReturningRich", cc -> {
+                cc.public_();
+                cc.method("findName", mc -> {
+                    mc.public_();
+                    mc.returning(Type.STRING, dc -> {
+                        dc.text("the name, or ");
+                        dc.code("null");
+                        dc.text(" if not found");
+                    });
+                    mc.body(b -> {
+                        b.return_(Expr.NULL);
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ReturningRich");
+        assertTrue(source.contains("@return"), "should contain @return tag");
+        assertTrue(source.contains("the name, or {@code null} if not found"),
+                "should contain rich inline content in @return tag");
+    }
+
+    /**
+     * Verifies that the {@code throws_} doc overload supports rich inline content.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void throwsDocWithRichContent() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        final Type ioException = Type.named("java.io.IOException");
+        sources.createSourceFile("com.example", "ThrowsRich", sf -> {
+            sf.class_("ThrowsRich", cc -> {
+                cc.public_();
+                cc.method("readFile", mc -> {
+                    mc.public_();
+                    mc.throws_(ioException, dc -> {
+                        dc.text("if the file is not ");
+                        dc.code("readable");
+                    });
+                    mc.body(b -> {
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ThrowsRich");
+        assertTrue(source.contains("@throws java.io.IOException if the file is not {@code readable}"),
+                "should contain @throws tag with rich inline content");
+    }
+
+    /**
+     * Verifies that using the {@code returning} doc overload without an explicit
+     * {@code docComment()} call still produces a valid Javadoc comment
+     * containing the {@code @return} tag.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void returningDocAlone() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "ReturnAlone", sf -> {
+            sf.class_("ReturnAlone", cc -> {
+                cc.public_();
+                cc.method("getCount", mc -> {
+                    mc.public_();
+                    mc.returning(Type.INT, dc -> dc.text("the count"));
+                    mc.body(b -> {
+                        b.return_(Expr.ZERO);
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ReturnAlone");
+        assertTrue(source.contains("/**"), "should produce a doc comment");
+        assertTrue(source.contains("@return"), "should contain @return tag");
+        assertTrue(source.contains("the count"), "should contain return description");
+        assertTrue(source.contains("*/"), "should close the doc comment");
+    }
+
+    /**
+     * Verifies that the {@code returning} and {@code throws_} doc overloads
+     * combine correctly with an explicit method-level {@code docComment()} call,
+     * producing body text followed by block tags in call order.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void returningAndThrowsDocCombinedWithMethodDoc() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        final Type ioException = Type.named("java.io.IOException");
+        sources.createSourceFile("com.example", "CombinedDoc", sf -> {
+            sf.class_("CombinedDoc", cc -> {
+                cc.public_();
+                cc.method("process", mc -> {
+                    mc.public_();
+                    mc.docComment(dc -> {
+                        dc.text("Processes data.");
+                    });
+                    mc.returning(Type.STRING, dc -> dc.text("the processed result"));
+                    mc.param("input", Type.STRING, p -> {
+                        p.docComment(dc -> dc.text("the input data"));
+                    });
+                    mc.throws_(ioException, dc -> dc.text("if processing fails"));
+                    mc.body(b -> {
+                        b.return_(Expr.$v("input"));
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "CombinedDoc");
+        assertTrue(source.contains("Processes data."), "should contain body text");
+        assertTrue(source.contains("@return"), "should contain @return tag");
+        assertTrue(source.contains("the processed result"), "should contain return description");
+        assertTrue(source.contains("@param input"), "should contain @param tag");
+        assertTrue(source.contains("@throws java.io.IOException"), "should contain @throws tag");
+
+        // Verify ordering: body text before all block tags
+        final int textIndex = source.indexOf("Processes data.");
+        final int returnIndex = source.indexOf("@return");
+        final int paramIndex = source.indexOf("@param input");
+        final int throwsIndex = source.indexOf("@throws java.io.IOException");
+        assertTrue(textIndex < returnIndex, "body text should appear before @return");
+        assertTrue(returnIndex < paramIndex, "@return should appear before @param (call order)");
+        assertTrue(paramIndex < throwsIndex, "@param should appear before @throws (call order)");
+    }
+
+    /**
+     * Verifies that calling {@code throws_(Type, Consumer)} multiple times
+     * produces multiple {@code @throws} tags in the generated Javadoc.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void multipleThrowsWithDoc() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        final Type ioException = Type.named("java.io.IOException");
+        final Type illegalArg = Type.named("java.lang.IllegalArgumentException");
+        sources.createSourceFile("com.example", "MultiThrowsDoc", sf -> {
+            sf.class_("MultiThrowsDoc", cc -> {
+                cc.public_();
+                cc.method("process", mc -> {
+                    mc.public_();
+                    mc.throws_(ioException, dc -> dc.text("if I/O fails"));
+                    mc.throws_(illegalArg, dc -> dc.text("if the argument is invalid"));
+                    mc.body(b -> {
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "MultiThrowsDoc");
+        assertTrue(source.contains("@throws java.io.IOException"),
+                "should contain first @throws tag");
+        assertTrue(source.contains("if I/O fails"), "should contain first throws description");
+        assertTrue(source.contains("@throws IllegalArgumentException"),
+                "should contain second @throws tag");
+        assertTrue(source.contains("if the argument is invalid"),
+                "should contain second throws description");
+    }
 }

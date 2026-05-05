@@ -2,6 +2,7 @@ package io.smallrye.jdeparser.creator;
 
 import java.util.function.Consumer;
 
+import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
 import io.smallrye.jdeparser.Var;
 import io.smallrye.jdeparser.impl.MethodCreatorImpl;
@@ -21,6 +22,33 @@ public sealed interface MethodCreator extends ModifiableCreator permits MethodCr
      * @param type the return type (use {@link Type#VOID} for void methods)
      */
     void returning(Type type);
+
+    /**
+     * Sets the return type of this method with documentation.
+     * <p>
+     * The documentation provided by the builder is contributed as a
+     * {@code @return} block tag in this method's Javadoc comment.
+     *
+     * @param type the return type (use {@link Type#VOID} for void methods)
+     * @param builder the callback to provide the {@code @return} tag content
+     */
+    void returning(Type type, Consumer<DocInlineCreator> builder);
+
+    /**
+     * Sets the return type of this method with inline return documentation.
+     * <p>
+     * The documentation provided by the builder is contributed as an
+     * inline {@code {@return ...}} tag in this method's Javadoc comment,
+     * which serves as both the first summary sentence and the {@code @return}
+     * block tag.
+     * <p>
+     * Requires source version {@linkplain SourceVersion#JAVA_16 16}
+     * or later.
+     *
+     * @param type the return type (use {@link Type#VOID} for void methods)
+     * @param builder the callback to provide the {@code {@return}} tag content
+     */
+    void returningInline(Type type, Consumer<DocInlineCreator> builder);
 
     /**
      * Adds a parameter to this method (simple form).
@@ -57,6 +85,17 @@ public sealed interface MethodCreator extends ModifiableCreator permits MethodCr
      * @param exceptionType the exception type
      */
     void throws_(Type exceptionType);
+
+    /**
+     * Adds a thrown exception type to this method with documentation.
+     * <p>
+     * The documentation provided by the builder is contributed as a
+     * {@code @throws} tag in this method's Javadoc comment.
+     *
+     * @param exceptionType the exception type
+     * @param builder the callback to provide the {@code @throws} tag content
+     */
+    void throws_(Type exceptionType, Consumer<DocInlineCreator> builder);
 
     /**
      * Adds a type parameter to this method.

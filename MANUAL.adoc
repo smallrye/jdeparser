@@ -6075,6 +6075,270 @@ public class JavadocAutoParam {
 
 This generates `@param <T>`, `@param first`, and `@param second` tags automatically from the individual `docComment` callbacks.
 
+=== Co-located @return and @throws Documentation
+
+Just as parameters and type parameters support co-located documentation via their creator callbacks, the `returning`, `returningInline`, and `throws_` methods on `MethodCreator` (and `throws_` on `ConstructorCreator`) accept an optional `Consumer<DocInlineCreator>` that generates the corresponding Javadoc tag automatically.
+
+This is the recommended approach because it keeps documentation next to the declaration it describes, rather than collecting all tags inside a separate `docComment` callback.
+
+==== @return via `returning`
+
+//TEST:BEGIN
+[source,java]
+----
+import java.io.IOException;
+import java.nio.file.Path;
+
+import io.smallrye.jdeparser.Expr;
+import io.smallrye.jdeparser.JDeparser;
+import io.smallrye.jdeparser.Sources;
+import io.smallrye.jdeparser.SourceVersion;
+import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
+import io.smallrye.jdeparser.format.Filer;
+import io.smallrye.jdeparser.format.FormatPreferences;
+
+public class JavadocColocatedReturn {
+    public static void main(String[] args) throws IOException {
+        Filer filer = Filer.newInstance(Path.of("generated-sources"));
+        Sources sources = JDeparser.createSources(
+            filer, FormatPreferences.defaults(), SourceVersion.JAVA_17
+        );
+
+        sources.createSourceFile("com.example", "Example", sf -> {
+            sf.class_("Example", cc -> {
+                cc.method("getName", mc -> {
+                    mc.public_();
+                    // documentation is co-located with the return type declaration
+                    mc.returning(Type.STRING, doc -> {
+                        doc.text("the name of this entity, never ");
+                        doc.code("null");
+                    });
+                    mc.body(body -> {
+                        body.return_(Expr.$v("name"));
+                    });
+                });
+            });
+        });
+
+        sources.writeSources();
+    }
+}
+----
+//TEST:END
+
+This generates:
+
+[source,java]
+----
+/**
+ * @return the name of this entity, never {@code null}
+ */
+public String getName() {
+----
+
+==== {@return} via `returningInline` (Java 16+)
+
+The `returningInline` method generates the inline `{@return ...}` tag, which serves as both the first summary sentence and the `@return` tag:
+
+//TEST:BEGIN
+[source,java]
+----
+import java.io.IOException;
+import java.nio.file.Path;
+
+import io.smallrye.jdeparser.Expr;
+import io.smallrye.jdeparser.JDeparser;
+import io.smallrye.jdeparser.Sources;
+import io.smallrye.jdeparser.SourceVersion;
+import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.format.Filer;
+import io.smallrye.jdeparser.format.FormatPreferences;
+
+public class JavadocColocatedReturnInline {
+    public static void main(String[] args) throws IOException {
+        Filer filer = Filer.newInstance(Path.of("generated-sources"));
+        Sources sources = JDeparser.createSources(
+            filer, FormatPreferences.defaults(), SourceVersion.JAVA_17
+        );
+
+        sources.createSourceFile("com.example", "Example", sf -> {
+            sf.class_("Example", cc -> {
+                cc.method("getCount", mc -> {
+                    mc.public_();
+                    mc.returningInline(Type.INT, doc -> {
+                        doc.text("the current count of processed items");
+                    });
+                    mc.body(body -> {
+                        body.return_(Expr.$v("count"));
+                    });
+                });
+            });
+        });
+
+        sources.writeSources();
+    }
+}
+----
+//TEST:END
+
+This generates:
+
+[source,java]
+----
+/**
+ * {@return the current count of processed items}
+ */
+public int getCount() {
+----
+
+==== @throws via `throws_`
+
+//TEST:BEGIN
+[source,java]
+----
+import java.io.IOException;
+import java.nio.file.Path;
+
+import io.smallrye.jdeparser.Expr;
+import io.smallrye.jdeparser.JDeparser;
+import io.smallrye.jdeparser.Sources;
+import io.smallrye.jdeparser.SourceVersion;
+import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
+import io.smallrye.jdeparser.format.Filer;
+import io.smallrye.jdeparser.format.FormatPreferences;
+
+public class JavadocColocatedThrows {
+    public static void main(String[] args) throws IOException {
+        Filer filer = Filer.newInstance(Path.of("generated-sources"));
+        Sources sources = JDeparser.createSources(
+            filer, FormatPreferences.defaults(), SourceVersion.JAVA_17
+        );
+
+        sources.createSourceFile("com.example", "Example", sf -> {
+            sf.class_("Example", cc -> {
+                cc.method("parse", mc -> {
+                    mc.public_();
+                    mc.returning(Type.INT);
+                    Var input = mc.param("input", Type.STRING);
+                    // documentation is co-located with each throws declaration
+                    mc.throws_(Type.named("java.lang.NumberFormatException"), doc -> {
+                        doc.text("if ");
+                        doc.code("input");
+                        doc.text(" is not a valid integer");
+                    });
+                    mc.throws_(Type.named("java.lang.IllegalArgumentException"), doc -> {
+                        doc.text("if ");
+                        doc.code("input");
+                        doc.text(" is ");
+                        doc.code("null");
+                    });
+                    mc.body(body -> {
+                        body.return_(Type.named("java.lang.Integer")
+                            .call("parseInt", input));
+                    });
+                });
+            });
+        });
+
+        sources.writeSources();
+    }
+}
+----
+//TEST:END
+
+This generates:
+
+[source,java]
+----
+/**
+ * @throws NumberFormatException if {@code input} is not a valid integer
+ * @throws IllegalArgumentException if {@code input} is {@code null}
+ */
+public int parse(String input) throws NumberFormatException, IllegalArgumentException {
+----
+
+==== Combining co-located documentation
+
+All co-located documentation methods (`param` with doc, `typeParam` with doc, `returning` with doc, `throws_` with doc) can be used together, and can also be combined with a `docComment` callback for the method description and other block tags.
+Tags appear in declaration order within each category.
+
+//TEST:BEGIN
+[source,java]
+----
+import java.io.IOException;
+import java.nio.file.Path;
+
+import io.smallrye.jdeparser.Expr;
+import io.smallrye.jdeparser.JDeparser;
+import io.smallrye.jdeparser.Sources;
+import io.smallrye.jdeparser.SourceVersion;
+import io.smallrye.jdeparser.Type;
+import io.smallrye.jdeparser.Var;
+import io.smallrye.jdeparser.format.Filer;
+import io.smallrye.jdeparser.format.FormatPreferences;
+
+public class JavadocColocatedCombined {
+    public static void main(String[] args) throws IOException {
+        Filer filer = Filer.newInstance(Path.of("generated-sources"));
+        Sources sources = JDeparser.createSources(
+            filer, FormatPreferences.defaults(), SourceVersion.JAVA_17
+        );
+
+        sources.createSourceFile("com.example", "Example", sf -> {
+            sf.class_("Example", cc -> {
+                cc.method("transform", mc -> {
+                    mc.public_();
+                    Type t = mc.typeParam("T", tp -> {
+                        tp.docComment(doc -> doc.text("the element type"));
+                    });
+                    mc.returning(Type.named("java.util.List").typeArg(t), doc -> {
+                        doc.text("a new list containing the transformed elements");
+                    });
+                    Var input = mc.param("input", Type.named("java.util.List").typeArg(t), pc -> {
+                        pc.docComment(doc -> doc.text("the elements to transform"));
+                    });
+                    mc.throws_(Type.named("java.lang.IllegalArgumentException"), doc -> {
+                        doc.text("if ");
+                        doc.code("input");
+                        doc.text(" is ");
+                        doc.code("null");
+                        doc.text(" or empty");
+                    });
+                    mc.docComment(doc -> {
+                        doc.text("Transforms a list of elements.");
+                        doc.since("2.0");
+                    });
+                    mc.body(body -> {
+                        body.return_(input);
+                    });
+                });
+            });
+        });
+
+        sources.writeSources();
+    }
+}
+----
+//TEST:END
+
+This generates:
+
+[source,java]
+----
+/**
+ * Transforms a list of elements.
+ *
+ * @param <T> the element type
+ * @param input the elements to transform
+ * @return a new list containing the transformed elements
+ * @throws IllegalArgumentException if {@code input} is {@code null} or empty
+ * @since 2.0
+ */
+public <T> List<T> transform(List<T> input) throws IllegalArgumentException {
+----
+
 === Complete Javadoc Example
 
 //TEST:BEGIN
@@ -6138,7 +6402,11 @@ public class JavadocExample {
                     Type t = mc.typeParam("T", tp -> {
                         tp.docComment(doc -> doc.text("the record type"));
                     });
-                    mc.returning(listType.typeArg(t));
+                    mc.returning(listType.typeArg(t), doc -> {
+                        doc.text("a new list containing the processed records, ");
+                        doc.text("never ");
+                        doc.code("null");
+                    });
                     Var records = mc.param("records", listType.typeArg(t), pc -> {
                         pc.docComment(doc -> {
                             doc.text("the records to process (must not be ");
@@ -6146,17 +6414,12 @@ public class JavadocExample {
                             doc.text(")");
                         });
                     });
-                    mc.throws_(Type.named("java.lang.IllegalArgumentException"));
+                    mc.throws_(Type.named("java.lang.IllegalArgumentException"), doc -> {
+                        doc.text("if records is null or exceeds the maximum batch size");
+                    });
 
                     mc.docComment(doc -> {
                         doc.text("Processes a list of records and returns the results.");
-                        doc.return_(c -> {
-                            c.text("a new list containing the processed records, ");
-                            c.text("never ");
-                            c.code("null");
-                        });
-                        doc.throws_(Type.named("java.lang.IllegalArgumentException"),
-                            "if records is null or exceeds the maximum batch size");
                         doc.since("1.0");
                     });
 

@@ -13,6 +13,7 @@ import io.smallrye.jdeparser.creator.AccessLevel;
 import io.smallrye.jdeparser.creator.AnnotationCreator;
 import io.smallrye.jdeparser.creator.BlockCreator;
 import io.smallrye.jdeparser.creator.DocCommentCreator;
+import io.smallrye.jdeparser.creator.DocInlineCreator;
 import io.smallrye.jdeparser.creator.MethodCreator;
 import io.smallrye.jdeparser.creator.ModifierFlag;
 import io.smallrye.jdeparser.creator.ModifierLocation;
@@ -91,6 +92,34 @@ public final class MethodCreatorImpl extends AbstractCreator implements MethodCr
 
     /** {@inheritDoc} */
     @Override
+    public void returning(final Type type, final Consumer<DocInlineCreator> builder) {
+        checkActive();
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("builder", builder);
+        registerUsedType(type);
+        this.returnType = type;
+        final DocInlineCreatorImpl dc = new DocInlineCreatorImpl(version(), sourceFile(), null);
+        nest(() -> builder.accept(dc));
+        dc.finish();
+        getOrCreateDocComment().addReturnTag(dc);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void returningInline(final Type type, final Consumer<DocInlineCreator> builder) {
+        checkActive();
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("builder", builder);
+        registerUsedType(type);
+        this.returnType = type;
+        final DocInlineCreatorImpl dc = new DocInlineCreatorImpl(version(), sourceFile(), null);
+        nest(() -> builder.accept(dc));
+        dc.finish();
+        getOrCreateDocComment().addReturnInlineTag(dc);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public Var param(final String name, final Type type) {
         checkActive();
         Assert.checkNotNullParam("name", name);
@@ -148,6 +177,20 @@ public final class MethodCreatorImpl extends AbstractCreator implements MethodCr
         Assert.checkNotNullParam("exceptionType", exceptionType);
         registerUsedType(exceptionType);
         throwsTypes.add(exceptionType);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void throws_(final Type exceptionType, final Consumer<DocInlineCreator> builder) {
+        checkActive();
+        Assert.checkNotNullParam("exceptionType", exceptionType);
+        Assert.checkNotNullParam("builder", builder);
+        registerUsedType(exceptionType);
+        throwsTypes.add(exceptionType);
+        final DocInlineCreatorImpl dc = new DocInlineCreatorImpl(version(), sourceFile(), null);
+        nest(() -> builder.accept(dc));
+        dc.finish();
+        getOrCreateDocComment().addThrowsTag(exceptionType, dc);
     }
 
     /** {@inheritDoc} */

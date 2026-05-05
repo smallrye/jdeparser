@@ -25,6 +25,11 @@ import io.smallrye.jdeparser.creator.DocInlineCreator;
  * {@code @param} tags for method parameters, type parameters, and record
  * components are aggregated from sub-creators and added via
  * {@link #addParamTag(String, DocInlineCreatorImpl)} and {@link #addTypeParamTag(String, DocInlineCreatorImpl)}.
+ * Similarly, {@code @return} and {@code @throws} tags can be aggregated
+ * from the enclosing method/constructor creator via
+ * {@link #addReturnTag(DocInlineCreatorImpl)},
+ * {@link #addReturnInlineTag(DocInlineCreatorImpl)}, and
+ * {@link #addThrowsTag(Type, DocInlineCreatorImpl)}.
  * <p>
  * Type names in {@code {@link}}, {@code {@linkplain}}, {@code @throws},
  * and {@code @see} tags are resolved at write time via the
@@ -311,6 +316,73 @@ public final class DocCommentCreatorImpl extends DocInlineCreatorImpl implements
     public void addTypeParamTag(final String typeParamName, final DocInlineCreatorImpl description) {
         blockTags.add(w -> {
             w.writeUnescaped("@param <" + typeParamName + ">");
+            if (description != null && description.hasInlineContent()) {
+                w.ntsp();
+                description.writeInline(w);
+            }
+        });
+    }
+
+    /**
+     * Adds a {@code @return} block tag from the enclosing method creator.
+     * <p>
+     * This method is called eagerly by the enclosing method creator
+     * when a {@code returning} call includes documentation, so that
+     * write-time aggregation is not needed.
+     *
+     * @param description the inline content for the return description
+     */
+    public void addReturnTag(final DocInlineCreatorImpl description) {
+        blockTags.add(w -> {
+            w.writeUnescaped("@return");
+            if (description != null && description.hasInlineContent()) {
+                w.ntsp();
+                description.writeInline(w);
+            }
+        });
+    }
+
+    /**
+     * Adds a {@code {@return ...}} inline tag from the enclosing method creator.
+     * <p>
+     * This method is called eagerly by the enclosing method creator
+     * when a {@code returningInline} call includes documentation.
+     * The content serves as both the first summary sentence and the
+     * {@code @return} tag.
+     * <p>
+     * Requires source version {@linkplain io.smallrye.jdeparser.SourceVersion#JAVA_16 16}
+     * or later.
+     *
+     * @param description the inline content for the return description
+     */
+    public void addReturnInlineTag(final DocInlineCreatorImpl description) {
+        version().require(LanguageFeature.DOC_RETURN_INLINE);
+        parts.add(w -> {
+            w.writeUnescaped("{@return ");
+            if (description != null && description.hasInlineContent()) {
+                description.writeInline(w);
+            }
+            w.writeUnescaped("}");
+        });
+    }
+
+    /**
+     * Adds a {@code @throws} block tag from the enclosing method or constructor creator.
+     * <p>
+     * This method is called eagerly by the enclosing method/constructor
+     * creator when a {@code throws_} call includes documentation, so that
+     * write-time aggregation is not needed.
+     * <p>
+     * The exception type name is resolved at write time via the
+     * {@linkplain SourceFileWriter#resolveClassName(String) class name resolver}.
+     *
+     * @param exceptionType the exception type
+     * @param description the inline content for the exception description
+     */
+    public void addThrowsTag(final Type exceptionType, final DocInlineCreatorImpl description) {
+        final String qualifiedName = typeName(exceptionType);
+        blockTags.add(w -> {
+            w.writeUnescaped("@throws " + w.resolveClassName(qualifiedName));
             if (description != null && description.hasInlineContent()) {
                 w.ntsp();
                 description.writeInline(w);

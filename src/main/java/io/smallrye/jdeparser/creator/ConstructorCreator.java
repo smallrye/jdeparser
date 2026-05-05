@@ -50,6 +50,17 @@ public sealed interface ConstructorCreator extends ModifiableCreator permits Con
     void throws_(Type exceptionType);
 
     /**
+     * Adds a thrown exception type to this constructor with documentation.
+     * <p>
+     * The documentation provided by the builder is contributed as a
+     * {@code @throws} tag in this constructor's Javadoc comment.
+     *
+     * @param exceptionType the exception type
+     * @param builder the callback to provide the {@code @throws} tag content
+     */
+    void throws_(Type exceptionType, Consumer<DocInlineCreator> builder);
+
+    /**
      * Adds a type parameter to this constructor.
      *
      * @param name the type parameter name

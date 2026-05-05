@@ -14,6 +14,7 @@ import io.smallrye.jdeparser.creator.AnnotationCreator;
 import io.smallrye.jdeparser.creator.BlockCreator;
 import io.smallrye.jdeparser.creator.ConstructorCreator;
 import io.smallrye.jdeparser.creator.DocCommentCreator;
+import io.smallrye.jdeparser.creator.DocInlineCreator;
 import io.smallrye.jdeparser.creator.ModifierFlag;
 import io.smallrye.jdeparser.creator.ModifierLocation;
 import io.smallrye.jdeparser.creator.ParamCreator;
@@ -138,6 +139,20 @@ public final class ConstructorCreatorImpl extends AbstractCreator implements Con
         Assert.checkNotNullParam("exceptionType", exceptionType);
         registerUsedType(exceptionType);
         throwsTypes.add(exceptionType);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void throws_(final Type exceptionType, final Consumer<DocInlineCreator> builder) {
+        checkActive();
+        Assert.checkNotNullParam("exceptionType", exceptionType);
+        Assert.checkNotNullParam("builder", builder);
+        registerUsedType(exceptionType);
+        throwsTypes.add(exceptionType);
+        final DocInlineCreatorImpl dc = new DocInlineCreatorImpl(version(), sourceFile(), null);
+        nest(() -> builder.accept(dc));
+        dc.finish();
+        getOrCreateDocComment().addThrowsTag(exceptionType, dc);
     }
 
     /** {@inheritDoc} */

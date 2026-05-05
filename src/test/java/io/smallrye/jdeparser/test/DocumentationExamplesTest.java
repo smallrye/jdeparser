@@ -103,7 +103,7 @@ class DocumentationExamplesTest {
             String className, boolean compileOnly) throws Throwable {
         // rewrite output path so generated files go to target/doc-example
         String rewritten = source.replace(
-                "Path.of(\"generated-sources\")", "Path.of(\"target/doc-example\")");
+                "\"generated-sources\"", "\"target/doc-example\"");
 
         String classpath = buildClasspath();
 

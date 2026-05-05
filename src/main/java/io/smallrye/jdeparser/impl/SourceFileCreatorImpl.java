@@ -122,7 +122,7 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
     /** {@inheritDoc} */
     @Override
     public void import_(final Type type) {
-        checkActive();
+        checkNotDone();
         Assert.checkNotNullParam("type", type);
         if (type instanceof ReferenceType ref) {
             imports.add(ref.qualifiedName());
@@ -132,7 +132,7 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
     /** {@inheritDoc} */
     @Override
     public void import_(final Class<?> clazz) {
-        checkActive();
+        checkNotDone();
         Assert.checkNotNullParam("clazz", clazz);
         imports.add(clazz.getCanonicalName());
     }
@@ -140,7 +140,7 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
     /** {@inheritDoc} */
     @Override
     public void importStatic(final Type type, final String member) {
-        checkActive();
+        checkNotDone();
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("member", member);
         Assert.checkNotEmptyParam("member", member);
@@ -152,7 +152,7 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
     /** {@inheritDoc} */
     @Override
     public void importModule(final String moduleName) {
-        checkActive();
+        checkNotDone();
         Assert.checkNotNullParam("moduleName", moduleName);
         Assert.checkNotEmptyParam("moduleName", moduleName);
         version().require(LanguageFeature.MODULE_IMPORTS);

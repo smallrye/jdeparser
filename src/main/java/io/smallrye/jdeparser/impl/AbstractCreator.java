@@ -1,5 +1,6 @@
 package io.smallrye.jdeparser.impl;
 
+import io.smallrye.common.constraint.Assert;
 import io.smallrye.jdeparser.SourceVersion;
 import io.smallrye.jdeparser.Type;
 
@@ -60,16 +61,32 @@ public abstract class AbstractCreator {
     }
 
     /**
+     * Verifies that this creator has not been finalized.
+     * <p>
+     * Unlike {@link #checkActive()}, this permits calls while in the
+     * NESTED state. Use this for operations that are safe to perform
+     * concurrently with a child callback (e.g., adding imports).
+     *
+     * @throws IllegalStateException if the creator is DONE
+     */
+    protected void checkNotDone() {
+        if (state == ST_DONE) {
+            throw new IllegalStateException("Creator has already been completed");
+        }
+    }
+
+    /**
      * Verifies that this creator is in the ACTIVE state.
      *
      * @throws IllegalStateException if the creator is NESTED or DONE
      */
     protected void checkActive() {
-        if (state != ST_ACTIVE) {
-            throw new IllegalStateException(
-                    state == ST_NESTED
-                            ? "Cannot modify creator while a nested callback is active"
-                            : "Creator has already been completed");
+        switch (state) {
+            case ST_ACTIVE -> {
+            }
+            case ST_NESTED -> throw new IllegalStateException("Cannot modify creator while a nested callback is active");
+            case ST_DONE -> throw new IllegalStateException("Creator has already been completed");
+            default -> throw Assert.impossibleSwitchCase(state);
         }
     }
 

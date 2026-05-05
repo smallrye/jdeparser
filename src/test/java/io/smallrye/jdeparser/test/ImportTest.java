@@ -618,6 +618,206 @@ class ImportTest extends AbstractGeneratingTestCase {
                 "Shadowed same-package type must be fully qualified, got:\n" + source);
     }
 
+    // ── Imports from nested creators ─────────────────────────────────────
+
+    /**
+     * Verifies that {@link io.smallrye.jdeparser.creator.SourceFileCreator#import_(Type)}
+     * can be called from within a nested class creator callback and produces
+     * a correct import statement with simple name resolution.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void importFromNestedClassCreator() throws IOException {
+        final Type listType = Type.named("java.util.List");
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "NestedImport", sf -> {
+            sf.class_("NestedImport", cc -> {
+                cc.public_();
+                // import added from within the class creator callback
+                sf.import_(listType);
+                cc.field("items", fc -> {
+                    fc.private_();
+                    fc.type(listType);
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "NestedImport");
+        assertTrue(source.contains("import java.util.List;"),
+                "Import added from nested class creator should produce import statement, got:\n" + source);
+        assertTrue(source.contains("private List items;"),
+                "Type imported from nested creator should use simple name, got:\n" + source);
+    }
+
+    /**
+     * Verifies that {@link io.smallrye.jdeparser.creator.SourceFileCreator#import_(Type)}
+     * can be called from a deeply nested creator callback (inside a method
+     * body within a class) and still produces a correct import.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void importFromDeeplyNestedCreator() throws IOException {
+        final Type listType = Type.named("java.util.List");
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "DeepNested", sf -> {
+            sf.class_("DeepNested", cc -> {
+                cc.public_();
+                cc.method("getItems", mc -> {
+                    mc.public_();
+                    mc.returning(listType);
+                    mc.body(b -> {
+                        // import added from within the method body callback
+                        sf.import_(listType);
+                        b.return_(Expr.NULL);
+                    });
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "DeepNested");
+        assertTrue(source.contains("import java.util.List;"),
+                "Import added from deeply nested creator should produce import statement, got:\n" + source);
+        assertTrue(source.contains("public List getItems()"),
+                "Type imported from deeply nested creator should use simple name, got:\n" + source);
+    }
+
+    /**
+     * Verifies that {@link io.smallrye.jdeparser.creator.SourceFileCreator#import_(Class)}
+     * can be called from within a nested creator callback.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void importClassFromNestedCreator() throws IOException {
+        final Type listType = Type.of(java.util.List.class);
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "NestedClassImport", sf -> {
+            sf.class_("NestedClassImport", cc -> {
+                cc.public_();
+                sf.import_(java.util.List.class);
+                cc.field("items", fc -> {
+                    fc.private_();
+                    fc.type(listType);
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "NestedClassImport");
+        assertTrue(source.contains("import java.util.List;"),
+                "Class import from nested creator should produce import statement, got:\n" + source);
+        assertTrue(source.contains("private List items;"),
+                "Type imported via Class from nested creator should use simple name, got:\n" + source);
+    }
+
+    /**
+     * Verifies that {@link io.smallrye.jdeparser.creator.SourceFileCreator#importStatic(Type, String)}
+     * can be called from within a nested creator callback.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void staticImportFromNestedCreator() throws IOException {
+        final Type collectorsType = Type.named("java.util.stream.Collectors");
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "NestedStaticImport", sf -> {
+            sf.class_("NestedStaticImport", cc -> {
+                cc.public_();
+                sf.importStatic(collectorsType, "toList");
+                cc.field("dummy", fc -> {
+                    fc.private_();
+                    fc.type(Type.INT);
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "NestedStaticImport");
+        assertTrue(source.contains("import static java.util.stream.Collectors.toList;"),
+                "Static import from nested creator should produce import statement, got:\n" + source);
+    }
+
+    /**
+     * Verifies that {@link io.smallrye.jdeparser.creator.SourceFileCreator#importModule(String)}
+     * can be called from within a nested creator callback.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void moduleImportFromNestedCreator() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_25);
+        sources.createSourceFile("com.example", "NestedModuleImport", sf -> {
+            sf.class_("NestedModuleImport", cc -> {
+                cc.public_();
+                sf.importModule("java.base");
+                cc.field("dummy", fc -> {
+                    fc.private_();
+                    fc.type(Type.INT);
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "NestedModuleImport");
+        assertTrue(source.contains("import module java.base;"),
+                "Module import from nested creator should produce import statement, got:\n" + source);
+    }
+
+    /**
+     * Verifies that imports added both before and during a nested creator
+     * callback are all present and resolve correctly in the output.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void importsFromMixedTopLevelAndNested() throws IOException {
+        final Type listType = Type.named("java.util.List");
+        final Type mapType = Type.named("java.util.Map");
+        final Type setType = Type.named("java.util.Set");
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "MixedNesting", sf -> {
+            // import added before nesting
+            sf.import_(listType);
+            sf.class_("MixedNesting", cc -> {
+                cc.public_();
+                // import added during nesting
+                sf.import_(mapType);
+                cc.field("list", fc -> {
+                    fc.private_();
+                    fc.type(listType);
+                });
+                cc.field("map", fc -> {
+                    fc.private_();
+                    fc.type(mapType);
+                });
+                cc.method("process", mc -> {
+                    mc.public_();
+                    mc.body(b -> {
+                        // import added from deeply nested callback
+                        sf.import_(setType);
+                    });
+                });
+                cc.field("set", fc -> {
+                    fc.private_();
+                    fc.type(setType);
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "MixedNesting");
+        assertTrue(source.contains("import java.util.List;"),
+                "Top-level import should be present, got:\n" + source);
+        assertTrue(source.contains("import java.util.Map;"),
+                "Import from nested class creator should be present, got:\n" + source);
+        assertTrue(source.contains("import java.util.Set;"),
+                "Import from deeply nested method body should be present, got:\n" + source);
+        assertTrue(source.contains("private List list;"),
+                "List should use simple name, got:\n" + source);
+        assertTrue(source.contains("private Map map;"),
+                "Map should use simple name, got:\n" + source);
+        assertTrue(source.contains("private Set set;"),
+                "Set should use simple name, got:\n" + source);
+    }
+
     // ── Mixed scenarios ─────────────────────────────────────────────────
 
     /**

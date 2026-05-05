@@ -13,6 +13,12 @@ import io.smallrye.jdeparser.impl.SourceFileCreatorImpl;
  * within a source file. The source file's package declaration is set
  * when the file is created via
  * {@link Sources#createSourceFile(String, String, Consumer)}.
+ * <p>
+ * Import methods ({@link #import_(Type)}, {@link #import_(Class)},
+ * {@link #importStatic(Type, String)}, {@link #importModule(String)})
+ * may be called at any time before the source file is written, including
+ * from within nested creator callbacks (e.g., inside a
+ * {@link ClassCreator} or {@link MethodCreator} body).
  */
 public sealed interface SourceFileCreator permits SourceFileCreatorImpl {
 

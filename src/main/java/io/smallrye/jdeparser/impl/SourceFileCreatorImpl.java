@@ -124,7 +124,7 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
     public void import_(final Type type) {
         checkNotDone();
         Assert.checkNotNullParam("type", type);
-        if (type instanceof ReferenceType ref) {
+        if (type.erasure() instanceof ReferenceType ref) {
             imports.add(ref.qualifiedName());
         }
     }
@@ -144,7 +144,7 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("member", member);
         Assert.checkNotEmptyParam("member", member);
-        if (type instanceof ReferenceType ref) {
+        if (type.erasure() instanceof ReferenceType ref) {
             staticImports.add(ref.qualifiedName() + "." + member);
         }
     }

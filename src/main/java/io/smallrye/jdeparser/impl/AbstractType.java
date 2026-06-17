@@ -60,7 +60,6 @@ public abstract non-sealed class AbstractType implements Type, Writable {
     @Override
     public Type typeArg(final List<Type> args) {
         Assert.checkNotNullParam("args", args);
-        Assert.checkNotEmptyParam("args", args);
         return new NarrowedType(this, args);
     }
 

@@ -192,6 +192,7 @@ public sealed interface Type permits AbstractType {
     /**
      * Returns a parameterized type by applying the given type arguments to this type
      * (e.g., {@code This<A, B>}).
+     * If the list is empty, a "diamond operator" will be produced.
      *
      * @param args the type arguments to apply as a list
      * @return the parameterized type

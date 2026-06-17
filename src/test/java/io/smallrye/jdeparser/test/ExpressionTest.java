@@ -176,6 +176,28 @@ class ExpressionTest extends AbstractGeneratingTestCase {
     }
 
     /**
+     * Verifies that constructing a parameterized type with an empty type argument
+     * list produces the diamond operator, e.g. {@code new ArrayList<>()}.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void diamondOperator() throws IOException {
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "Diamond", sf -> {
+            sf.class_("Diamond", cc -> {
+                cc.field("items", fc -> {
+                    fc.type(Type.named("java.util.List").typeArg(Type.STRING));
+                    fc.init(Type.named("java.util.ArrayList").typeArg(List.of()).new_(List.of()));
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "Diamond");
+        assertTrue(source.contains("new java.util.ArrayList<>()"), "should contain diamond operator in new expression");
+    }
+
+    /**
      * Verifies array creation and access.
      *
      * @throws IOException if source generation fails

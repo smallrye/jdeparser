@@ -318,6 +318,35 @@ class ImportTest extends AbstractGeneratingTestCase {
     }
 
     /**
+     * Verifies that importing a parameterized type (e.g. {@code List<String>})
+     * imports the erasure ({@code List}), producing the correct import
+     * statement and simple-name resolution.
+     *
+     * @throws IOException if source generation fails
+     */
+    @Test
+    void importParameterizedTypeImportsErasure() throws IOException {
+        final Type parameterizedList = Type.named("java.util.List").typeArg(Type.STRING);
+        final Sources sources = createSources(SourceVersion.JAVA_17);
+        sources.createSourceFile("com.example", "ErasureImport", sf -> {
+            sf.import_(parameterizedList);
+            sf.class_("ErasureImport", cc -> {
+                cc.public_();
+                cc.field("names", fc -> {
+                    fc.private_();
+                    fc.type(parameterizedList);
+                });
+            });
+        });
+        sources.writeSources();
+        final String source = getSource("com.example", "ErasureImport");
+        assertTrue(source.contains("import java.util.List;"),
+                "Importing a parameterized type should import the erasure, got:\n" + source);
+        assertTrue(source.contains("private List<String> names;"),
+                "Field should use simple name from erased import, got:\n" + source);
+    }
+
+    /**
      * Verifies that a type imported via {@link Class} object uses simple
      * names in the generated output.
      *

@@ -1,5 +1,5 @@
 name: JDeparser
 # for this project, always set next-version to the next *minor* unless it's on a stable branch!
 release:
-  current-version: 3.0.alpha1
+  current-version: 3.0.beta1
   next-version: 3.0-SNAPSHOT

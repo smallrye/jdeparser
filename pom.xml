@@ -4,7 +4,7 @@
 
     <groupId>io.smallrye.jdeparser</groupId>
     <artifactId>jdeparser</artifactId>
-    <version>3.0-SNAPSHOT</version>
+    <version>3.0.beta1</version>
 
     <parent>
         <groupId>io.smallrye</groupId>
@@ -20,7 +20,7 @@
         <url>https://github.com/smallrye/jdeparser</url>
         <connection>scm:git:git@github.com:smallrye/jdeparser</connection>
         <developerConnection>scm:git:git@github.com:smallrye/jdeparser</developerConnection>
-      <tag>HEAD</tag>
+      <tag>3.0.beta1</tag>
     </scm>
 
     <issueManagement>

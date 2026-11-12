@@ -2,12 +2,15 @@ package io.smallrye.jdeparser.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import javax.lang.model.element.Element;
 
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.jdeparser.LanguageFeature;
@@ -56,6 +59,9 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
     /** The file content (type declarations, comments, blank lines). */
     private final List<Writable> content = new ArrayList<>();
 
+    /** Collected originating elements for this source file. */
+    private final List<Element> originatingElements = new ArrayList<>();
+
     /**
      * Constructs a new source file creator.
      *
@@ -89,6 +95,16 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
      */
     public String fileName() {
         return fileName;
+    }
+
+    /**
+     * Returns an unmodifiable view of the originating elements registered
+     * for this source file.
+     *
+     * @return the originating elements
+     */
+    public List<Element> originatingElements() {
+        return Collections.unmodifiableList(originatingElements);
     }
 
     /**
@@ -157,6 +173,14 @@ public final class SourceFileCreatorImpl extends AbstractCreator implements Sour
         Assert.checkNotEmptyParam("moduleName", moduleName);
         version().require(LanguageFeature.MODULE_IMPORTS);
         moduleImports.add(moduleName);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void originatingElement(final Element element) {
+        checkNotDone();
+        Assert.checkNotNullParam("element", element);
+        originatingElements.add(element);
     }
 
     /** {@inheritDoc} */

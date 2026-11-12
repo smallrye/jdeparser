@@ -260,12 +260,23 @@ public class SetupOverview {
 === Filer
 
 The `Filer` interface abstracts the output destination.
-It has a single method:
+It has a single abstract method:
 
 [source,java]
 ----
 Writer openWriter(String packageName, String fileName) throws IOException;
 ----
+
+There is also a `default` overload that additionally receives the originating elements of the generated file:
+
+[source,java]
+----
+default Writer openWriter(String packageName, String fileName,
+                          List<javax.lang.model.element.Element> originatingElements) throws IOException;
+----
+
+The default implementation ignores the originating elements and delegates to the two-argument method, so `Filer` remains usable as a lambda.
+Custom ``Filer``s that want to honor originating elements can override this method as well; `Filer.newInstance(javax.annotation.processing.Filer)` does so, forwarding the elements to `createSourceFile(name, originatingElements)`.
 
 Three factory methods cover the common cases:
 
@@ -7038,6 +7049,7 @@ public class BuilderProcessor extends AbstractProcessor {
         Type targetType = Type.named(packageName + "." + className);
 
         sources.createSourceFile(packageName, builderName, sf -> {
+            sf.originatingElement(typeElement);
             sf.class_(builderName, cc -> {
                 cc.public_();
                 cc.final_();
@@ -7095,6 +7107,8 @@ public class BuilderProcessor extends AbstractProcessor {
 Key points for annotation processor integration:
 
 * Use `Filer.newInstance(processingEnv.getFiler())` to integrate with the annotation processing environment
+* Call `sf.originatingElement(typeElement)` so that the generated file is linked to its source element.
+  This lets build tools and IDEs track generated-source provenance for incremental compilation.
 * Use `Type.of(TypeMirror)` to convert `javax.lang.model` types to JDeparser types
 * Generated sources are automatically registered with the compilation environment
 
@@ -7363,7 +7377,7 @@ This chapter provides a tabular overview of every public type in the library, or
 |===
 |Type |Description |Chapter
 
-|`SourceFileCreator` |Top-level source file: imports, type declarations, comments |<<source-files-imports>>
+|`SourceFileCreator` |Top-level source file: imports, originating elements, type declarations, comments |<<source-files-imports>>
 |`ClassCreator` |Class declaration: extends, implements, permits, members |<<classes>>
 |`InterfaceCreator` |Interface declaration: extends, permits, default/static/private methods |<<interfaces>>
 |`EnumCreator` |Enum declaration: constants, fields, constructors, methods |<<enums>>

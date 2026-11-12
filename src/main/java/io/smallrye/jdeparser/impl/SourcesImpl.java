@@ -81,7 +81,7 @@ public final class SourcesImpl implements Sources {
     @Override
     public void writeSources() throws IOException {
         for (SourceFileCreatorImpl sf : sourceFiles) {
-            try (Writer out = filer.openWriter(sf.packageName(), sf.fileName());
+            try (Writer out = filer.openWriter(sf.packageName(), sf.fileName(), sf.originatingElements());
                     SourceFileWriter writer = new SourceFileWriter(out, preferences, sourceVersion)) {
                 sf.write(writer);
             }

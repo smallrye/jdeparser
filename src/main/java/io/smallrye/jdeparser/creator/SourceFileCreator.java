@@ -2,6 +2,8 @@ package io.smallrye.jdeparser.creator;
 
 import java.util.function.Consumer;
 
+import javax.lang.model.element.Element;
+
 import io.smallrye.jdeparser.Sources;
 import io.smallrye.jdeparser.Type;
 import io.smallrye.jdeparser.impl.SourceFileCreatorImpl;
@@ -16,9 +18,10 @@ import io.smallrye.jdeparser.impl.SourceFileCreatorImpl;
  * <p>
  * Import methods ({@link #import_(Type)}, {@link #import_(Class)},
  * {@link #importStatic(Type, String)}, {@link #importModule(String)})
- * may be called at any time before the source file is written, including
- * from within nested creator callbacks (e.g., inside a
- * {@link ClassCreator} or {@link MethodCreator} body).
+ * and {@link #originatingElement(Element)} may be called at any time
+ * before the source file is written, including from within nested creator
+ * callbacks (e.g., inside a {@link ClassCreator} or {@link MethodCreator}
+ * body).
  */
 public sealed interface SourceFileCreator permits SourceFileCreatorImpl {
 
@@ -50,6 +53,18 @@ public sealed interface SourceFileCreator permits SourceFileCreatorImpl {
      * @param moduleName the module name to import
      */
     void importModule(String moduleName);
+
+    /**
+     * Adds an originating element for this source file.
+     * <p>
+     * Originating elements record which source elements (for example,
+     * the class an annotation was found on) caused this file to be generated.
+     * This allows build tools and IDEs to track generated-source provenance
+     * for incremental compilation.
+     *
+     * @param element the originating element; must not be {@code null}
+     */
+    void originatingElement(Element element);
 
     /**
      * Defines a top-level class in this source file.
